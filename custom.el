@@ -3,12 +3,13 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(custom-enabled-themes '(solarized-dark))
+ '(custom-enabled-themes '(solarized-dark solarized-light))
  '(custom-safe-themes
-   '("aff12479ae941ea8e790abb1359c9bb21ab10acd15486e07e64e0e10d7fdab38" default))
+   '("f0b0416502d80b1f21153df6f4dcb20614b9992cde4d5a5688053a271d0e8612" "aff12479ae941ea8e790abb1359c9bb21ab10acd15486e07e64e0e10d7fdab38" default))
+ '(lsp-headerline-breadcrumb-icons-enable nil)
  '(menu-bar-mode nil)
  '(package-selected-packages
-   '(projectile kotlin-mode lsp-java auctex pdf-tools lsp-haskell flycheck vterm yasnippet-snippets yasnippet which-key lsp-mode csharp-mode company cmake-mode solarized-theme))
+   '(cmake-mode expand-region projectile auctex pdf-tools vterm yasnippet-snippets yasnippet which-key company solarized-theme))
  '(scroll-bar-mode nil)
  '(tool-bar-mode nil)
  '(x-underline-at-descent-line t))

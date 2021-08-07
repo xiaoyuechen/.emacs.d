@@ -26,7 +26,6 @@
 
 (global-set-key (kbd "C-x C-b") 'ibuffer)
 (add-hook 'ibuffer-mode-hook 'ibuffer-auto-mode)
-(add-hook 'ibuffer-mode-hook 'ibuffer-vc-set-filter-groups-by-vc-root)
 
 (add-hook 'after-init-hook 'which-key-mode)
 
@@ -41,8 +40,6 @@
       company-idle-delay 0.0)
 (add-hook 'after-init-hook 'global-company-mode)
 
-(add-hook 'after-init-hook 'global-flycheck-mode)
-
 (add-hook 'text-mode-hook 'flyspell-mode)
 (add-hook 'prog-mode-hook 'flyspell-prog-mode)
 
@@ -52,19 +49,6 @@
   (define-key projectile-mode-map (kbd "s-z") 'projectile-command-map))
 
 (setq vterm-buffer-name-string "*vterm %s*")
-
-(require 'w3m-load)
-(global-set-key (kbd "C-x w") 'w3m-browse-url)
-
-(setq lsp-idle-delay 0.1)
-(add-hook 'lsp-mode-hook 'lsp-enable-which-key-integration)
-(add-hook 'c-mode-hook 'lsp)
-(add-hook 'c++-mode-hook 'lsp)
-(add-hook 'csharp-mode-hook 'lsp)
-(add-hook 'python-mode-hook 'lsp)
-(add-hook 'haskell-mode-hook 'lsp)
-(add-hook 'haskell-literate-mode-hook 'lsp)
-(add-hook 'java-mode-hook 'lsp)
 
 (pdf-loader-install)
 (add-hook 'pdf-view-mode-hook 'pdf-view-themed-minor-mode)
@@ -87,3 +71,4 @@
 (put 'narrow-to-page 'disabled nil)
 (put 'dired-find-alternate-file 'disabled nil)
 (put 'upcase-region 'disabled nil)
+(put 'downcase-region 'disabled nil)
