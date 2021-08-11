@@ -8,7 +8,7 @@
  '(lsp-headerline-breadcrumb-icons-enable nil)
  '(menu-bar-mode nil)
  '(package-selected-packages
-   '(flycheck lsp-mode cmake-mode expand-region projectile auctex pdf-tools vterm yasnippet-snippets yasnippet which-key company solarized-theme))
+   '(magit flycheck lsp-mode cmake-mode expand-region projectile auctex pdf-tools vterm yasnippet-snippets yasnippet which-key company solarized-theme))
  '(scroll-bar-mode nil)
  '(tool-bar-mode nil)
  '(x-underline-at-descent-line t))
