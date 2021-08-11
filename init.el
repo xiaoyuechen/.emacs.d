@@ -3,6 +3,9 @@
 
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 
+(setq user-full-name "Xiaoyue Chen")
+(setq user-mail-address "xiaoyue.chen.0484@student.uu.se")
+
 (let ((smart-theme "~/.emacs.d/hacking/smart-theme.el"))
   (load smart-theme))
 
