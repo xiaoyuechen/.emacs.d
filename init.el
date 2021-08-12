@@ -9,6 +9,16 @@
 (let ((smart-theme "~/.emacs.d/hacking/smart-theme.el"))
   (load smart-theme))
 
+(let ((fringe-bitmaps-hi-res "~/.emacs.d/hacking/fringe-bitmaps-hi-res.el"))
+  (load fringe-bitmaps-hi-res))
+
+(setq magit-section-visibility-indicator
+      '(fringe-bitmap-plus-hi-res . fringe-bitmap-minus-hi-res))
+(defun my-magit-mode-hook ()
+  (setq left-fringe-width 32))
+(add-hook 'magit-mode-hook 'my-magit-mode-hook)
+(global-set-key (kbd "C-x M-g") 'magit-dispatch)
+
 (setq backup-by-copying t)
 
 (which-key-mode)
