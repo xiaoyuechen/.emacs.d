@@ -2,7 +2,7 @@
 (load custom-file)
 
 ;; hacking packages
-(add-to-list 'load-path "~/.emacs.d/hacking")
+(add-to-list 'load-path "~/.emacs.d/hacks")
 (load "smart-theme")
 (load "hdfb")
 
@@ -65,9 +65,10 @@
 (with-eval-after-load 'eglot
   (define-key eglot-mode-map (kbd "C-c r") 'eglot-rename)
   (define-key eglot-mode-map (kbd "C-c f") 'eglot-format)
-  (add-to-list 'eglot-server-programs '((c-mode c++mode) . "clangd"))
-  (add-to-list 'eglot-server-programs '(java-mode . "jdtls"))
-  (add-to-list 'eglot-server-programs '(csharp-mode . ("omnisharp" "-lsp"))))
+  (add-to-list 'eglot-server-programs '((c-mode c++mode) . ("clangd")))
+  (add-to-list 'eglot-server-programs '(java-mode . ("jdtls")))
+  (add-to-list 'eglot-server-programs '(csharp-mode . ("omnisharp" "-lsp")))
+  (add-to-list 'eglot-server-programs '(cmake-mode . ("cmake-language-server"))))
 
 ;; compilation buffer
 (defun colorize-compilation-buffer ()
@@ -75,12 +76,15 @@
     (ansi-color-apply-on-region (point-min) (point-max))))
 (add-hook 'compilation-filter-hook 'colorize-compilation-buffer)
 
+(defun my-emacs-lisp-mode-hook ()
+  (flymake-mode))
+(add-hook 'emacs-lisp-mode-hook 'my-emacs-lisp-mode-hook)
+
 (defun my-text-mode-hook ()
   (flyspell-mode))
 (add-hook 'text-mode-hook 'my-text-mode-hook)
 
 (defun my-prog-mode-hook ()
-  (flymake-mode)
   (flyspell-prog-mode)
   (company-mode))
 (add-hook 'prog-mode-hook 'my-prog-mode-hook)
