@@ -28,12 +28,18 @@
 (add-hook 'ibuffer-mode-hook 'ibuffer-auto-mode)
 (setq gdb-many-windows t)
 (which-key-mode)
-(global-set-key (kbd "C-+") 'er/expand-region)
 
 ;; flymake
 (setq flymake-error-bitmap '(hdfb-double-exclamation-mark compilation-error))
 (setq flymake-warning-bitmap '(hdfb-exclamation-mark compilation-warning))
 (setq flymake-note-bitmap '(hdfb-exclamation-mark compilation-info))
+(with-eval-after-load 'flymake
+  (define-key flymake-mode-map (kbd "C-c e n") 'flymake-goto-next-error)
+  (define-key flymake-mode-map (kbd "C-c e p") 'flymake-goto-prev-error)
+  (define-key flymake-mode-map (kbd "C-c e l") 'flymake-show-diagnostics-buffer))
+
+;; eldoc
+(eldoc-add-command 'c-electric-paren)
 
 ;; magit
 (setq magit-section-visibility-indicator
@@ -43,11 +49,6 @@
 (add-hook 'magit-mode-hook 'my-magit-mode-hook)
 (global-set-key (kbd "C-x M-g") 'magit-dispatch)
 
-;; projectile
-(setq projectile-project-search-path '("~/repos"))
-(projectile-mode)
-(define-key projectile-mode-map (kbd "s-j") 'projectile-command-map)
-
 ;; vterm
 (setq vterm-buffer-name-string "vterm %s")
 
@@ -55,17 +56,22 @@
 (setq company-minimum-prefix-length 2
       company-idle-delay 0.0)
 
+;; yasnippet
 (with-eval-after-load 'yasnippet
   (yas-reload-all))
 
 ;; eglot
-(defun my-eglot-managed-mode-hook ()
-  (yas-minor-mode))
-(add-hook 'eglot-managed-mode-hook 'my-eglot-managed-mode-hook)
+(setq eglot-confirm-server-initiated-edits nil)
 (with-eval-after-load 'eglot
   (define-key eglot-mode-map (kbd "C-c r") 'eglot-rename)
   (define-key eglot-mode-map (kbd "C-c f") 'eglot-format)
-  (add-to-list 'eglot-server-programs '((c-mode c++mode) . ("clangd")))
+  (define-key eglot-mode-map (kbd "C-c a") 'eglot-code-actions)
+  (add-to-list
+   'eglot-server-programs
+   '((c-mode c++mode) .
+     ("clangd" "-background-index" "-clang-tidy" "-completion-style=detailed"
+      "-cross-file-rename" "-header-insertion=iwyu"
+      "-header-insertion-decorators")))
   (add-to-list 'eglot-server-programs '(java-mode . ("jdtls")))
   (add-to-list 'eglot-server-programs '(csharp-mode . ("omnisharp" "-lsp")))
   (add-to-list 'eglot-server-programs '(cmake-mode . ("cmake-language-server"))))
@@ -95,22 +101,27 @@
 (add-hook 'c-mode-common-hook 'my-c-mode-common-hook)
 
 (defun my-c-mode-hook ()
+  (yas-minor-mode)
   (eglot-ensure))
 (add-hook 'c-mode-hook 'my-c-mode-hook)
 
 (defun my-c++-mode-hook ()
+  (yas-minor-mode)
   (eglot-ensure))
 (add-hook 'c++-mode-hook 'my-c++-mode-hook)
 
 (defun my-java-mode-hook ()
+  (yas-minor-mode)
   (eglot-ensure))
 (add-hook 'java-mode-hook 'my-java-mode-hook)
 
 (defun my-csharp-mode-hook ()
+  (yas-minor-mode)
   (eglot-ensure))
 (add-hook 'csharp-mode-hook 'my-csharp-mode-hook)
 
 (defun my-python-mode-hook ()
+  (yas-minor-mode)
   (eglot-ensure))
 (add-hook 'python-mode-hook 'my-python-mode-hook)
 
@@ -120,20 +131,6 @@
 (defun my-pdf-view-mode-hook ()
   (pdf-view-themed-minor-mode))
 (add-hook 'pdf-view-mode-hook 'my-pdf-view-mode-hook)
-
-(add-hook 'LaTeX-mode-hook 'turn-on-reftex)
-(add-hook 'latex-mode-hook 'turn-on-reftex)
-(setq TeX-auto-save t)
-(setq TeX-parse-self t)
-(setq-default TeX-master nil)
-(setq TeX-view-program-selection '((output-pdf "PDF Tools")))
-(setq TeX-electric-math '("\\(" . "\\)"))
-(setq TeX-electric-sub-and-superscript t)
-(add-hook 'TeX-after-compilation-finished-functions
-	  'TeX-revert-document-buffer)
-(add-hook 'TeX-mode-hook 'prettify-symbols-mode)
-(setq LaTeX-electric-left-right-brace t)
-(add-hook 'LaTeX-mode-hook 'turn-on-auto-fill)
 
 (put 'narrow-to-region 'disabled nil)
 (put 'narrow-to-page 'disabled nil)
