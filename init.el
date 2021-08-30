@@ -11,6 +11,9 @@
 (setq user-full-name "Xiaoyue Chen")
 (setq user-mail-address "xiaoyue.chen.0484@student.uu.se")
 
+(global-set-key (kbd "C-c v") 'view-mode)
+(global-set-key (kbd "C-x C-b") 'ibuffer)
+
 (fringe-mode 16)
 (menu-bar-mode -1)
 (scroll-bar-mode -1)
@@ -24,7 +27,6 @@
 (setq show-paren-delay 0)
 (show-paren-mode)
 (electric-pair-mode)
-(global-set-key (kbd "C-x C-b") 'ibuffer)
 (add-hook 'ibuffer-mode-hook 'ibuffer-auto-mode)
 (setq gdb-many-windows t)
 (which-key-mode)
