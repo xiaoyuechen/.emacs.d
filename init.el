@@ -31,6 +31,11 @@
 (setq gdb-many-windows t)
 (which-key-mode)
 
+;; flyspell
+(with-eval-after-load 'flyspell
+  (define-key flyspell-mode-map (kbd "C-.") nil)
+  (define-key flyspell-mode-map (kbd "C-M-i") nil))
+
 ;; flymake
 (setq flymake-error-bitmap '(hdfb-double-exclamation-mark compilation-error))
 (setq flymake-warning-bitmap '(hdfb-exclamation-mark compilation-warning))
@@ -133,6 +138,34 @@
 (defun my-pdf-view-mode-hook ()
   (pdf-view-themed-minor-mode))
 (add-hook 'pdf-view-mode-hook 'my-pdf-view-mode-hook)
+
+;; LaTeX
+(defun my-TeX-command-run-all ()
+  (interactive)
+  (save-buffer)
+  (TeX-command-run-all nil))
+(with-eval-after-load 'tex
+  (define-key TeX-mode-map (kbd "C-c c") 'my-TeX-command-run-all))
+(setq-default TeX-master nil)
+(setq TeX-auto-save t)
+(setq TeX-parse-self t)
+(setq TeX-view-program-selection '((output-pdf "PDF Tools")))
+(setq TeX-electric-math '("\\(" . "\\)"))
+(setq TeX-electric-sub-and-superscript t)
+(setq LaTeX-electric-left-right-brace t)
+(setq reftex-plug-into-AUCTeX t)
+(defun my-LaTeX-mode-hook ()
+  (yas-minor-mode)
+  (eglot-ensure)
+  (company-mode)
+  (turn-on-reftex)
+  (turn-on-auto-fill)
+  (prettify-symbols-mode)
+  (TeX-fold-mode)
+  (TeX-source-correlate-mode))
+(add-hook 'LaTeX-mode-hook 'my-LaTeX-mode-hook)
+(add-hook 'TeX-after-compilation-finished-functions
+	  'TeX-revert-document-buffer)
 
 (put 'narrow-to-region 'disabled nil)
 (put 'narrow-to-page 'disabled nil)
