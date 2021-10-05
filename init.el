@@ -12,14 +12,18 @@
 (setq user-mail-address "xiaoyue.chen.0484@student.uu.se")
 
 (global-set-key (kbd "C-c v") 'view-mode)
+(global-set-key (kbd "C-c f") 'find-file-at-point)
+(global-set-key (kbd "C-c i") 'imenu)
 (global-set-key (kbd "C-x C-b") 'ibuffer)
+(global-set-key (kbd "C-c m") 'man)
 
 (fringe-mode 16)
 (menu-bar-mode -1)
-(scroll-bar-mode -1)
 (tool-bar-mode -1)
+(setq process-connection-type nil)
 (setq x-underline-at-descent-line t)
-(setq backup-by-copying t)
+(setq sentence-end-double-space nil)
+(auto-insert-mode t)
 (global-auto-revert-mode)
 (global-visual-line-mode)
 (add-hook 'before-save-hook 'delete-trailing-whitespace)
@@ -30,6 +34,14 @@
 (add-hook 'ibuffer-mode-hook 'ibuffer-auto-mode)
 (setq gdb-many-windows t)
 (which-key-mode)
+
+;; tramp
+(with-eval-after-load 'tramp
+  (add-to-list 'tramp-connection-properties
+               (list nil "remote-shell" "/bin/bash"))
+  (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
+  (add-to-list 'tramp-default-proxies-alist
+	       '("kitt" "\\`root\\'" "/ssh:%h:")))
 
 ;; flyspell
 (with-eval-after-load 'flyspell
@@ -43,7 +55,9 @@
 (with-eval-after-load 'flymake
   (define-key flymake-mode-map (kbd "C-c e n") 'flymake-goto-next-error)
   (define-key flymake-mode-map (kbd "C-c e p") 'flymake-goto-prev-error)
-  (define-key flymake-mode-map (kbd "C-c e l") 'flymake-show-diagnostics-buffer))
+  (define-key flymake-mode-map (kbd "C-c e l") 'flymake-show-diagnostics-buffer)
+  (define-key flymake-mode-map (kbd "M-n") 'flymake-goto-next-error)
+  (define-key flymake-mode-map (kbd "M-p") 'flymake-goto-prev-error))
 
 ;; eldoc
 (eldoc-add-command 'c-electric-paren)
@@ -55,9 +69,6 @@
   (setq left-fringe-width 32))
 (add-hook 'magit-mode-hook 'my-magit-mode-hook)
 (global-set-key (kbd "C-x M-g") 'magit-dispatch)
-
-;; vterm
-(setq vterm-buffer-name-string "vterm %s")
 
 ;; company
 (setq company-minimum-prefix-length 2
@@ -71,7 +82,7 @@
 (setq eglot-confirm-server-initiated-edits nil)
 (with-eval-after-load 'eglot
   (define-key eglot-mode-map (kbd "C-c r") 'eglot-rename)
-  (define-key eglot-mode-map (kbd "C-c f") 'eglot-format)
+  (define-key eglot-mode-map (kbd "C-c t") 'eglot-format)
   (define-key eglot-mode-map (kbd "C-c a") 'eglot-code-actions)
   (add-to-list
    'eglot-server-programs
@@ -101,10 +112,13 @@
   (flyspell-prog-mode)
   (company-mode))
 (add-hook 'prog-mode-hook 'my-prog-mode-hook)
+(define-key prog-mode-map (kbd "C-c c") 'compile)
 
 (defun my-c-mode-common-hook ()
   (c-toggle-electric-state 1)
-  (c-toggle-auto-newline 1))
+  (c-toggle-auto-newline 1)
+  (local-set-key (kbd "C-c o") 'ff-find-other-file)
+  (require 'disaster))
 (add-hook 'c-mode-common-hook 'my-c-mode-common-hook)
 
 (defun my-c-mode-hook ()
@@ -118,8 +132,7 @@
 (add-hook 'c++-mode-hook 'my-c++-mode-hook)
 
 (defun my-java-mode-hook ()
-  (yas-minor-mode)
-  (eglot-ensure))
+  (yas-minor-mode))
 (add-hook 'java-mode-hook 'my-java-mode-hook)
 
 (defun my-csharp-mode-hook ()
@@ -133,11 +146,19 @@
 (add-hook 'python-mode-hook 'my-python-mode-hook)
 
 (add-to-list 'auto-mode-alist '("\\.mzn\\'" . minizinc-mode))
+(defun my-minizinc-mode-hook ()
+  (c-toggle-electric-state -1)
+  (c-toggle-auto-newline -1))
+(add-hook 'minizinc-mode-hook 'my-minizinc-mode-hook)
 
 (pdf-loader-install)
 (defun my-pdf-view-mode-hook ()
   (pdf-view-themed-minor-mode))
 (add-hook 'pdf-view-mode-hook 'my-pdf-view-mode-hook)
+
+;; disaster
+(with-eval-after-load 'disaster
+  (define-key c-mode-base-map (kbd "C-c d") 'disaster))
 
 ;; LaTeX
 (defun my-TeX-command-run-all ()
@@ -149,7 +170,7 @@
 (setq-default TeX-master nil)
 (setq TeX-auto-save t)
 (setq TeX-parse-self t)
-(setq TeX-view-program-selection '((output-pdf "PDF Tools")))
+;; (setq TeX-view-program-selection '((output-pdf "PDF Tools")))
 (setq TeX-electric-math '("\\(" . "\\)"))
 (setq TeX-electric-sub-and-superscript t)
 (setq LaTeX-electric-left-right-brace t)
@@ -160,6 +181,7 @@
   (company-mode)
   (turn-on-reftex)
   (turn-on-auto-fill)
+  (LaTeX-math-mode)
   (prettify-symbols-mode)
   (TeX-fold-mode)
   (TeX-source-correlate-mode))
