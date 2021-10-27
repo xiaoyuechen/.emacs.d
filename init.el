@@ -5,35 +5,42 @@
 (add-to-list 'load-path "~/.emacs.d/hacks")
 (load "smart-theme")
 (load "hdfb")
+(load "liceheader")
 
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 
 (setq user-full-name "Xiaoyue Chen")
-(setq user-mail-address "xiaoyue.chen.0484@student.uu.se")
+(setq user-mail-address "xiaoyue.chen@it.uu.se")
 
 (global-set-key (kbd "C-c v") 'view-mode)
 (global-set-key (kbd "C-c f") 'find-file-at-point)
 (global-set-key (kbd "C-c i") 'imenu)
-(global-set-key (kbd "C-x C-b") 'ibuffer)
 (global-set-key (kbd "C-c m") 'man)
+(global-set-key (kbd "C-c l") 'lice)
+(global-set-key (kbd "C-c R") 'rename-buffer)
 
+(desktop-save-mode 1)
 (fringe-mode 16)
 (menu-bar-mode -1)
 (tool-bar-mode -1)
+(scroll-all-mode 0)
 (setq process-connection-type nil)
 (setq x-underline-at-descent-line t)
 (setq sentence-end-double-space nil)
-(auto-insert-mode t)
-(global-auto-revert-mode)
-(global-visual-line-mode)
+(auto-insert-mode 1)
+(global-auto-revert-mode 1)
+(global-visual-line-mode 1)
 (add-hook 'before-save-hook 'delete-trailing-whitespace)
-(delete-selection-mode)
+(delete-selection-mode 1)
 (setq show-paren-delay 0)
-(show-paren-mode)
-(electric-pair-mode)
+(show-paren-mode 1)
+(electric-pair-mode 1)
 (add-hook 'ibuffer-mode-hook 'ibuffer-auto-mode)
 (setq gdb-many-windows t)
-(which-key-mode)
+(which-key-mode 1)
+(setq imenu-auto-rescan t)
+(setq ido-enable-flex-matching t)
+(ido-mode 1)
 
 ;; tramp
 (with-eval-after-load 'tramp
@@ -41,7 +48,9 @@
                (list nil "remote-shell" "/bin/bash"))
   (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
   (add-to-list 'tramp-default-proxies-alist
-	       '("kitt" "\\`root\\'" "/ssh:%h:")))
+	       '("kitt" "\\`root\\'" "/ssh:%h:"))
+  (add-to-list 'tramp-default-proxies-alist
+	       '("kink" "\\`root\\'" "/ssh:%h:")))
 
 ;; flyspell
 (with-eval-after-load 'flyspell
@@ -116,7 +125,7 @@
 
 (defun my-c-mode-common-hook ()
   (c-toggle-electric-state 1)
-  (c-toggle-auto-newline 1)
+  ;; (c-toggle-auto-newline 1)
   (local-set-key (kbd "C-c o") 'ff-find-other-file)
   (require 'disaster))
 (add-hook 'c-mode-common-hook 'my-c-mode-common-hook)
@@ -150,6 +159,8 @@
   (c-toggle-electric-state -1)
   (c-toggle-auto-newline -1))
 (add-hook 'minizinc-mode-hook 'my-minizinc-mode-hook)
+
+(add-to-list 'auto-mode-alist '("\\.cl\\'" . opencl-mode))
 
 (pdf-loader-install)
 (defun my-pdf-view-mode-hook ()
