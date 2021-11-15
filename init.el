@@ -3,7 +3,7 @@
 
 ;; hacking packages
 (add-to-list 'load-path "~/.emacs.d/hacks")
-(load "smart-theme")
+;; (load "smart-theme")
 (load "hdfb")
 (load "liceheader")
 
@@ -19,11 +19,10 @@
 (global-set-key (kbd "C-c l") 'lice)
 (global-set-key (kbd "C-c R") 'rename-buffer)
 
-(desktop-save-mode 1)
+;; (desktop-save-mode 1)
 (fringe-mode 16)
-(menu-bar-mode -1)
-(tool-bar-mode -1)
-(scroll-all-mode 0)
+(menu-bar-mode 0)
+(tool-bar-mode 0)
 (setq process-connection-type nil)
 (setq x-underline-at-descent-line t)
 (setq sentence-end-double-space nil)
@@ -40,6 +39,7 @@
 (which-key-mode 1)
 (setq imenu-auto-rescan t)
 (setq ido-enable-flex-matching t)
+(setq ido-everywhere t)
 (ido-mode 1)
 
 ;; tramp
@@ -48,9 +48,9 @@
                (list nil "remote-shell" "/bin/bash"))
   (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
   (add-to-list 'tramp-default-proxies-alist
-	       '("kitt" "\\`root\\'" "/ssh:%h:"))
+	       '(nil "\\`root\\'" "/ssh:%h:"))
   (add-to-list 'tramp-default-proxies-alist
-	       '("kink" "\\`root\\'" "/ssh:%h:")))
+	       '((system-name) "\\`root\\'" nil)))
 
 ;; flyspell
 (with-eval-after-load 'flyspell
@@ -93,14 +93,20 @@
   (define-key eglot-mode-map (kbd "C-c r") 'eglot-rename)
   (define-key eglot-mode-map (kbd "C-c t") 'eglot-format)
   (define-key eglot-mode-map (kbd "C-c a") 'eglot-code-actions)
+  (setenv "CLASSPATH"
+	  (concat
+	   (expand-file-name
+	    (car
+	     (file-expand-wildcards
+	      "~/.emacs.d/eclipse.jdt.ls/plugins/org.eclipse.equinox.launcher_*.jar")))
+	   ":"
+	   (getenv "CLASSPATH")))
   (add-to-list
    'eglot-server-programs
    '((c-mode c++mode) .
      ("clangd" "-background-index" "-clang-tidy" "-completion-style=detailed"
       "-cross-file-rename" "-header-insertion=iwyu"
       "-header-insertion-decorators")))
-  (add-to-list 'eglot-server-programs '(java-mode . ("jdtls")))
-  (add-to-list 'eglot-server-programs '(csharp-mode . ("omnisharp" "-lsp")))
   (add-to-list 'eglot-server-programs '(cmake-mode . ("cmake-language-server"))))
 
 ;; compilation buffer
@@ -125,7 +131,6 @@
 
 (defun my-c-mode-common-hook ()
   (c-toggle-electric-state 1)
-  ;; (c-toggle-auto-newline 1)
   (local-set-key (kbd "C-c o") 'ff-find-other-file)
   (require 'disaster))
 (add-hook 'c-mode-common-hook 'my-c-mode-common-hook)
@@ -141,13 +146,9 @@
 (add-hook 'c++-mode-hook 'my-c++-mode-hook)
 
 (defun my-java-mode-hook ()
-  (yas-minor-mode))
-(add-hook 'java-mode-hook 'my-java-mode-hook)
-
-(defun my-csharp-mode-hook ()
   (yas-minor-mode)
   (eglot-ensure))
-(add-hook 'csharp-mode-hook 'my-csharp-mode-hook)
+(add-hook 'java-mode-hook 'my-java-mode-hook)
 
 (defun my-python-mode-hook ()
   (yas-minor-mode)
