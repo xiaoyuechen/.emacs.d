@@ -5,7 +5,7 @@
  ;; If there is more than one, they won't work right.
  '(auth-source-save-behavior nil)
  '(package-selected-packages
-   '(lice opencl-mode disaster gitignore-mode markdown-mode auctex eglot minizinc-mode magit cmake-mode pdf-tools vterm yasnippet-snippets yasnippet which-key company solarized-theme)))
+   '(pyim-basedict posframe pyim exwm haskell-mode lice opencl-mode disaster gitignore-mode markdown-mode auctex eglot minizinc-mode magit cmake-mode pdf-tools vterm yasnippet-snippets yasnippet which-key company solarized-theme)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

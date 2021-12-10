@@ -10,8 +10,9 @@
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 
 (setq user-full-name "Xiaoyue Chen")
-(setq user-mail-address "xiaoyue.chen@it.uu.se")
+(setq user-mail-address "xiaoyue.chen.0484@student.uu.se")
 
+(set-face-attribute 'default nil :height 160)
 (global-set-key (kbd "C-c v") 'view-mode)
 (global-set-key (kbd "C-c f") 'find-file-at-point)
 (global-set-key (kbd "C-c i") 'imenu)
@@ -19,7 +20,12 @@
 (global-set-key (kbd "C-c l") 'lice)
 (global-set-key (kbd "C-c R") 'rename-buffer)
 
-;; (desktop-save-mode 1)
+(setq display-time-24hr-format t)
+(display-time-mode 1)
+(display-battery-mode 1)
+(setq mouse-wheel-scroll-amount '(1 ((shift) . 1)))
+(setq mouse-wheel-progressive-speed nil)
+(setq mouse-wheel-follow-mouse 't)
 (fringe-mode 16)
 (menu-bar-mode 0)
 (tool-bar-mode 0)
@@ -39,8 +45,96 @@
 (which-key-mode 1)
 (setq imenu-auto-rescan t)
 (setq ido-enable-flex-matching t)
-(setq ido-everywhere t)
 (ido-mode 1)
+
+;; Chinese input
+(setq default-input-method "pyim")
+(with-eval-after-load 'pyim
+  (pyim-default-scheme 'quanpin)
+  (setq pyim-page-tooltip 'posframe)
+  (setq pyim-page-length 5)
+  (require 'pyim-basedict)
+  (pyim-basedict-enable))
+
+;; EXWM
+(require 'exwm)
+
+(require 'exwm-config)
+(exwm-config-ido)
+
+(setq exwm-workspace-number 4)
+
+(add-hook 'exwm-update-class-hook
+          (lambda ()
+            (unless (or (string-prefix-p "sun-awt-X11-" exwm-instance-name)
+                        (string= "gimp" exwm-instance-name))
+              (exwm-workspace-rename-buffer exwm-class-name))))
+(add-hook 'exwm-update-title-hook
+          (lambda ()
+            (when (or (not exwm-instance-name)
+                      (string-prefix-p "sun-awt-X11-" exwm-instance-name)
+                      (string= "gimp" exwm-instance-name))
+              (exwm-workspace-rename-buffer exwm-title))))
+
+(setq exwm-input-global-keys
+      `(
+        ([?\s-r] . exwm-reset)
+        ([?\s-w] . exwm-workspace-switch)
+        ,@(mapcar (lambda (i)
+                    `(,(kbd (format "s-%d" i)) .
+                      (lambda ()
+                        (interactive)
+                        (exwm-workspace-switch-create ,i))))
+                  (number-sequence 0 9))
+        ([?\s-&] . (lambda (command)
+		     (interactive (list (read-shell-command "$ ")))
+		     (start-process-shell-command command nil command)))))
+(define-key exwm-mode-map [?\C-q] #'exwm-input-send-next-key)
+
+(setq exwm-input-simulation-keys
+      '(([?\C-b] . [left])
+        ([?\M-b] . [C-left])
+        ([?\C-f] . [right])
+        ([?\M-f] . [C-right])
+        ([?\C-p] . [up])
+        ([?\C-n] . [down])
+        ([?\C-a] . [home])
+        ([?\C-e] . [end])
+        ([?\M-v] . [prior])
+        ([?\C-v] . [next])
+        ([?\C-d] . [delete])
+        ([?\C-k] . [S-end delete])
+        ([?\C-w] . [?\C-x])
+        ([?\M-w] . [?\C-c])
+        ([?\C-y] . [?\C-v])
+        ([?\C-s] . [?\C-f])))
+
+(exwm-enable)
+
+(require 'exwm-randr)
+(defun my-exwm-randr-screen-change-hook ()
+  (let ((xrandr-output-regexp "\n\\([^ ]+\\) connected ")
+        default-output)
+    (with-temp-buffer
+      (call-process "xrandr" nil t nil)
+      (goto-char (point-min))
+      (re-search-forward xrandr-output-regexp nil 'noerror)
+      (setq default-output (match-string 1))
+      (forward-line)
+      (if (not (re-search-forward xrandr-output-regexp nil 'noerror))
+          (call-process "xrandr" nil nil nil "--output" default-output "--auto")
+        (call-process
+         "xrandr" nil nil nil
+         "--output" (match-string 1) "--primary" "--auto"
+         "--output" default-output "--off")
+        (setq exwm-randr-workspace-output-plist (list 0 (match-string 1)))))))
+(add-hook 'exwm-randr-screen-change-hook 'my-exwm-randr-screen-change-hook)
+(exwm-randr-enable)
+
+;; using xim input
+(require 'exwm-xim)
+(exwm-xim-enable)
+(push ?\C-\\ exwm-input-prefix-keys)
 
 ;; tramp
 (with-eval-after-load 'tramp
@@ -155,6 +249,11 @@
   (eglot-ensure))
 (add-hook 'python-mode-hook 'my-python-mode-hook)
 
+(defun my-haskell-mode-hook ()
+  (yas-minor-mode)
+  (eglot-ensure))
+(add-hook 'haskell-mode-hook 'my-haskell-mode-hook)
+
 (add-to-list 'auto-mode-alist '("\\.mzn\\'" . minizinc-mode))
 (defun my-minizinc-mode-hook ()
   (c-toggle-electric-state -1)
@@ -164,9 +263,6 @@
 (add-to-list 'auto-mode-alist '("\\.cl\\'" . opencl-mode))
 
 (pdf-loader-install)
-(defun my-pdf-view-mode-hook ()
-  (pdf-view-themed-minor-mode))
-(add-hook 'pdf-view-mode-hook 'my-pdf-view-mode-hook)
 
 ;; disaster
 (with-eval-after-load 'disaster
@@ -180,9 +276,12 @@
 (with-eval-after-load 'tex
   (define-key TeX-mode-map (kbd "C-c c") 'my-TeX-command-run-all))
 (setq-default TeX-master nil)
+(setq-default TeX-engine 'luatex)
+;; Use pdf-tools to open PDF files
 (setq TeX-auto-save t)
 (setq TeX-parse-self t)
 ;; (setq TeX-view-program-selection '((output-pdf "PDF Tools")))
+(setq TeX-source-correlate-start-server t)
 (setq TeX-electric-math '("\\(" . "\\)"))
 (setq TeX-electric-sub-and-superscript t)
 (setq LaTeX-electric-left-right-brace t)
@@ -194,6 +293,7 @@
   (turn-on-reftex)
   (turn-on-auto-fill)
   (LaTeX-math-mode)
+  (setq prettify-symbols-unprettify-at-point t)
   (prettify-symbols-mode)
   (TeX-fold-mode)
   (TeX-source-correlate-mode))
