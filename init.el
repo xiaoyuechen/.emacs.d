@@ -12,14 +12,16 @@
 (setq user-full-name "Xiaoyue Chen")
 (setq user-mail-address "xiaoyue.chen.0484@student.uu.se")
 
-(set-face-attribute 'default nil :height 160)
 (global-set-key (kbd "C-c v") 'view-mode)
 (global-set-key (kbd "C-c f") 'find-file-at-point)
 (global-set-key (kbd "C-c i") 'imenu)
 (global-set-key (kbd "C-c m") 'man)
 (global-set-key (kbd "C-c l") 'lice)
 (global-set-key (kbd "C-c R") 'rename-buffer)
+(global-unset-key (kbd "C-z"))
 
+(server-start)
+(desktop-save-mode 1)
 (setq display-time-24hr-format t)
 (display-time-mode 1)
 (display-battery-mode 1)
@@ -29,6 +31,7 @@
 (fringe-mode 16)
 (menu-bar-mode 0)
 (tool-bar-mode 0)
+(scroll-bar-mode 0)
 (setq process-connection-type nil)
 (setq x-underline-at-descent-line t)
 (setq sentence-end-double-space nil)
@@ -62,8 +65,6 @@
 (require 'exwm-config)
 (exwm-config-ido)
 
-(setq exwm-workspace-number 4)
-
 (add-hook 'exwm-update-class-hook
           (lambda ()
             (unless (or (string-prefix-p "sun-awt-X11-" exwm-instance-name)
@@ -78,6 +79,7 @@
 
 (setq exwm-input-global-keys
       `(
+	([?\s-x ?\s-c] . kill-emacs)
         ([?\s-r] . exwm-reset)
         ([?\s-w] . exwm-workspace-switch)
         ,@(mapcar (lambda (i)
@@ -112,23 +114,7 @@
 (exwm-enable)
 
 (require 'exwm-randr)
-(defun my-exwm-randr-screen-change-hook ()
-  (let ((xrandr-output-regexp "\n\\([^ ]+\\) connected ")
-        default-output)
-    (with-temp-buffer
-      (call-process "xrandr" nil t nil)
-      (goto-char (point-min))
-      (re-search-forward xrandr-output-regexp nil 'noerror)
-      (setq default-output (match-string 1))
-      (forward-line)
-      (if (not (re-search-forward xrandr-output-regexp nil 'noerror))
-          (call-process "xrandr" nil nil nil "--output" default-output "--auto")
-        (call-process
-         "xrandr" nil nil nil
-         "--output" (match-string 1) "--primary" "--auto"
-         "--output" default-output "--off")
-        (setq exwm-randr-workspace-output-plist (list 0 (match-string 1)))))))
-(add-hook 'exwm-randr-screen-change-hook 'my-exwm-randr-screen-change-hook)
+(setq exwm-randr-workspace-monitor-plist '(7 "eDP-1-1" 8 "HDMI-0" 9 "DP-0"))
 (exwm-randr-enable)
 
 ;; using xim input
@@ -162,6 +148,9 @@
   (define-key flymake-mode-map (kbd "M-n") 'flymake-goto-next-error)
   (define-key flymake-mode-map (kbd "M-p") 'flymake-goto-prev-error))
 
+;; vterm
+(setq vterm-buffer-name-string "vterm %s")
+
 ;; eldoc
 (eldoc-add-command 'c-electric-paren)
 
@@ -174,7 +163,7 @@
 (global-set-key (kbd "C-x M-g") 'magit-dispatch)
 
 ;; company
-(setq company-minimum-prefix-length 2
+(setq company-minimum-prefix-length 3
       company-idle-delay 0.0)
 
 ;; yasnippet
@@ -183,24 +172,20 @@
 
 ;; eglot
 (setq eglot-confirm-server-initiated-edits nil)
+(defun my-jdtls-contact (interactive)
+  (let ((workspace (expand-file-name (md5 (project-root (project-current))) "/tmp")))
+    (list "jdtls" "-data" workspace)))
 (with-eval-after-load 'eglot
   (define-key eglot-mode-map (kbd "C-c r") 'eglot-rename)
   (define-key eglot-mode-map (kbd "C-c t") 'eglot-format)
   (define-key eglot-mode-map (kbd "C-c a") 'eglot-code-actions)
-  (setenv "CLASSPATH"
-	  (concat
-	   (expand-file-name
-	    (car
-	     (file-expand-wildcards
-	      "~/.emacs.d/eclipse.jdt.ls/plugins/org.eclipse.equinox.launcher_*.jar")))
-	   ":"
-	   (getenv "CLASSPATH")))
   (add-to-list
    'eglot-server-programs
    '((c-mode c++mode) .
      ("clangd" "-background-index" "-clang-tidy" "-completion-style=detailed"
       "-cross-file-rename" "-header-insertion=iwyu"
       "-header-insertion-decorators")))
+  (add-to-list 'eglot-server-programs '(java-mode . my-jdtls-contact))
   (add-to-list 'eglot-server-programs '(cmake-mode . ("cmake-language-server"))))
 
 ;; compilation buffer
@@ -280,7 +265,6 @@
 ;; Use pdf-tools to open PDF files
 (setq TeX-auto-save t)
 (setq TeX-parse-self t)
-;; (setq TeX-view-program-selection '((output-pdf "PDF Tools")))
 (setq TeX-source-correlate-start-server t)
 (setq TeX-electric-math '("\\(" . "\\)"))
 (setq TeX-electric-sub-and-superscript t)
