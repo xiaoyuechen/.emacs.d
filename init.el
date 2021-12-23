@@ -20,11 +20,6 @@
 (global-set-key (kbd "C-c R") 'rename-buffer)
 (global-unset-key (kbd "C-z"))
 
-(server-start)
-(desktop-save-mode 1)
-(setq display-time-24hr-format t)
-(display-time-mode 1)
-(display-battery-mode 1)
 (setq mouse-wheel-scroll-amount '(1 ((shift) . 1)))
 (setq mouse-wheel-progressive-speed nil)
 (setq mouse-wheel-follow-mouse 't)
@@ -50,87 +45,11 @@
 (setq ido-enable-flex-matching t)
 (ido-mode 1)
 
-;; Chinese input
-(setq default-input-method "pyim")
-(with-eval-after-load 'pyim
-  (pyim-default-scheme 'quanpin)
-  (setq pyim-page-tooltip 'posframe)
-  (setq pyim-page-length 5)
-  (require 'pyim-basedict)
-  (pyim-basedict-enable))
-
-;; EXWM
-(require 'exwm)
-
-(require 'exwm-config)
-(exwm-config-ido)
-
-(add-hook 'exwm-update-class-hook
-          (lambda ()
-            (unless (or (string-prefix-p "sun-awt-X11-" exwm-instance-name)
-                        (string= "gimp" exwm-instance-name))
-              (exwm-workspace-rename-buffer exwm-class-name))))
-(add-hook 'exwm-update-title-hook
-          (lambda ()
-            (when (or (not exwm-instance-name)
-                      (string-prefix-p "sun-awt-X11-" exwm-instance-name)
-                      (string= "gimp" exwm-instance-name))
-              (exwm-workspace-rename-buffer exwm-title))))
-
-(setq exwm-input-global-keys
-      `(
-	([?\s-x ?\s-c] . kill-emacs)
-        ([?\s-r] . exwm-reset)
-        ([?\s-w] . exwm-workspace-switch)
-        ,@(mapcar (lambda (i)
-                    `(,(kbd (format "s-%d" i)) .
-                      (lambda ()
-                        (interactive)
-                        (exwm-workspace-switch-create ,i))))
-                  (number-sequence 0 9))
-        ([?\s-&] . (lambda (command)
-		     (interactive (list (read-shell-command "$ ")))
-		     (start-process-shell-command command nil command)))))
-(define-key exwm-mode-map [?\C-q] #'exwm-input-send-next-key)
-
-(setq exwm-input-simulation-keys
-      '(([?\C-b] . [left])
-        ([?\M-b] . [C-left])
-        ([?\C-f] . [right])
-        ([?\M-f] . [C-right])
-        ([?\C-p] . [up])
-        ([?\C-n] . [down])
-        ([?\C-a] . [home])
-        ([?\C-e] . [end])
-        ([?\M-v] . [prior])
-        ([?\C-v] . [next])
-        ([?\C-d] . [delete])
-        ([?\C-k] . [S-end delete])
-        ([?\C-w] . [?\C-x])
-        ([?\M-w] . [?\C-c])
-        ([?\C-y] . [?\C-v])
-        ([?\C-s] . [?\C-f])))
-
-(exwm-enable)
-
-(require 'exwm-randr)
-(setq exwm-randr-workspace-monitor-plist '(7 "eDP-1-1" 8 "HDMI-0" 9 "DP-0"))
-(exwm-randr-enable)
-
-;; using xim input
-(require 'exwm-xim)
-(exwm-xim-enable)
-(push ?\C-\\ exwm-input-prefix-keys)
-
 ;; tramp
 (with-eval-after-load 'tramp
   (add-to-list 'tramp-connection-properties
                (list nil "remote-shell" "/bin/bash"))
-  (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
-  (add-to-list 'tramp-default-proxies-alist
-	       '(nil "\\`root\\'" "/ssh:%h:"))
-  (add-to-list 'tramp-default-proxies-alist
-	       '((system-name) "\\`root\\'" nil)))
+  (add-to-list 'tramp-remote-path 'tramp-own-remote-path))
 
 ;; flyspell
 (with-eval-after-load 'flyspell
@@ -150,6 +69,13 @@
 
 ;; vterm
 (setq vterm-buffer-name-string "vterm %s")
+
+;; dired
+(defun xdg-open-dired ()
+  (interactive)
+  (start-process-shell-command "xdg-open" nil "xdg-open" (dired-get-filename)))
+(with-eval-after-load 'dired
+  (define-key dired-mode-map (kbd "C-c f") 'xdg-open-dired))
 
 ;; eldoc
 (eldoc-add-command 'c-electric-paren)
