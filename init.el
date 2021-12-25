@@ -1,33 +1,38 @@
-(setq custom-file "~/.emacs.d/custom.el")
-(load custom-file)
-
-;; hacking packages
-(add-to-list 'load-path "~/.emacs.d/hacks")
-;; (load "smart-theme")
-(load "hdfb")
-(load "liceheader")
-
-(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
-
 (setq user-full-name "Xiaoyue Chen")
 (setq user-mail-address "xiaoyue.chen.0484@student.uu.se")
 
+(setq custom-file "~/.emacs.d/custom.el")
+(load custom-file)
+
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+
+;; hacking packages
+(add-to-list 'load-path "~/.emacs.d/hacks")
+(load "hdfb")
+(load "liceheader")
+
+;; environment variables
+(when (daemonp) (exec-path-from-shell-initialize))
+
+;; global key bindings
 (global-set-key (kbd "C-c v") 'view-mode)
 (global-set-key (kbd "C-c f") 'find-file-at-point)
 (global-set-key (kbd "C-c i") 'imenu)
 (global-set-key (kbd "C-c m") 'man)
 (global-set-key (kbd "C-c l") 'lice)
 (global-set-key (kbd "C-c R") 'rename-buffer)
-(global-unset-key (kbd "C-z"))
+(global-set-key (kbd "C-c h") 'recentf-open-files)
 
+;; mouse wheel
 (setq mouse-wheel-scroll-amount '(1 ((shift) . 1)))
 (setq mouse-wheel-progressive-speed nil)
 (setq mouse-wheel-follow-mouse 't)
+
+;; modes
 (fringe-mode 16)
 (menu-bar-mode 0)
 (tool-bar-mode 0)
 (scroll-bar-mode 0)
-(setq process-connection-type nil)
 (setq x-underline-at-descent-line t)
 (setq sentence-end-double-space nil)
 (auto-insert-mode 1)
@@ -44,6 +49,12 @@
 (setq imenu-auto-rescan t)
 (setq ido-enable-flex-matching t)
 (ido-mode 1)
+(setq recentf-max-saved-items 200)
+(recentf-mode 1)
+
+;; bash completion
+(add-hook 'shell-dynamic-complete-functions
+	  'bash-completion-dynamic-complete)
 
 ;; tramp
 (with-eval-after-load 'tramp
@@ -188,7 +199,6 @@
   (define-key TeX-mode-map (kbd "C-c c") 'my-TeX-command-run-all))
 (setq-default TeX-master nil)
 (setq-default TeX-engine 'luatex)
-;; Use pdf-tools to open PDF files
 (setq TeX-auto-save t)
 (setq TeX-parse-self t)
 (setq TeX-source-correlate-start-server t)
