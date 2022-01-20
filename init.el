@@ -22,6 +22,7 @@
 (global-set-key (kbd "C-c l") 'lice)
 (global-set-key (kbd "C-c R") 'rename-buffer)
 (global-set-key (kbd "C-c h") 'recentf-open-files)
+(global-set-key (kbd "C-c c") 'compile)
 
 ;; mouse wheel
 (setq mouse-wheel-scroll-amount '(1 ((shift) . 1)))
@@ -29,10 +30,10 @@
 (setq mouse-wheel-follow-mouse 't)
 
 ;; modes
-(fringe-mode 16)
 (menu-bar-mode 0)
 (tool-bar-mode 0)
 (scroll-bar-mode 0)
+(fringe-mode 16)
 (setq x-underline-at-descent-line t)
 (setq sentence-end-double-space nil)
 (auto-insert-mode 1)
@@ -84,7 +85,8 @@
 ;; dired
 (defun xdg-open-dired ()
   (interactive)
-  (start-process-shell-command "xdg-open" nil "xdg-open" (dired-get-filename)))
+  (start-process-shell-command "xdg-open" nil "xdg-open"
+			       (concat "\"" (dired-get-filename) "\"")))
 (with-eval-after-load 'dired
   (define-key dired-mode-map (kbd "C-c f") 'xdg-open-dired))
 
@@ -109,9 +111,6 @@
 
 ;; eglot
 (setq eglot-confirm-server-initiated-edits nil)
-(defun my-jdtls-contact (interactive)
-  (let ((workspace (expand-file-name (md5 (project-root (project-current))) "/tmp")))
-    (list "jdtls" "-data" workspace)))
 (with-eval-after-load 'eglot
   (define-key eglot-mode-map (kbd "C-c r") 'eglot-rename)
   (define-key eglot-mode-map (kbd "C-c t") 'eglot-format)
@@ -124,6 +123,9 @@
       "-header-insertion-decorators")))
   (add-to-list 'eglot-server-programs '(java-mode . my-jdtls-contact))
   (add-to-list 'eglot-server-programs '(cmake-mode . ("cmake-language-server"))))
+(defun my-jdtls-contact (interactive)
+  (let ((workspace (expand-file-name (md5 (project-root (project-current))) "/tmp")))
+    (list "jdtls" "-data" workspace)))
 
 ;; compilation buffer
 (defun colorize-compilation-buffer ()
@@ -140,10 +142,10 @@
 (add-hook 'text-mode-hook 'my-text-mode-hook)
 
 (defun my-prog-mode-hook ()
+  (setq fill-column 80)
   (flyspell-prog-mode)
   (company-mode))
 (add-hook 'prog-mode-hook 'my-prog-mode-hook)
-(define-key prog-mode-map (kbd "C-c c") 'compile)
 
 (defun my-c-mode-common-hook ()
   (c-toggle-electric-state 1)
