@@ -15,7 +15,7 @@
 (global-set-key (kbd "C-s") 'swiper-isearch)
 (global-set-key (kbd "C-x C-b") 'ibuffer)
 
-(global-set-key (kbd "C-c f") 'find-file-at-point)
+(global-set-key (kbd "C-c o") 'find-file-at-point)
 (global-set-key (kbd "C-c i") 'imenu)
 (global-set-key (kbd "C-c m") 'man)
 (global-set-key (kbd "C-c V") 'view-mode)
@@ -33,8 +33,8 @@
 ;; modes
 (menu-bar-mode 0)
 (tool-bar-mode 0)
-(scroll-bar-mode 0)
-(fringe-mode 16)
+(scroll-bar-mode)
+(fringe-mode '(16 . 0))
 (setq-default fill-column 80)
 (setq x-underline-at-descent-line t)
 (setq sentence-end-double-space nil)
@@ -84,6 +84,7 @@
 
 ;; vterm
 (setq vterm-buffer-name-string "*Vterm %s*")
+(setq vterm-max-scrollback 10000)
 (defun vterm-shell-command (cmd)
   (vterm)
   (vterm-send-string (concat "exec /bin/sh -c " cmd))
@@ -96,7 +97,7 @@
     (call-process "xdg-open" nil 0 nil file)))
 
 (with-eval-after-load 'dired
-  (define-key dired-mode-map (kbd "C-c f") 'xdg-open-dired))
+  (define-key dired-mode-map (kbd "C-c o") 'xdg-open-dired))
 
 ;; eldoc
 (eldoc-add-command 'c-electric-paren)
@@ -119,9 +120,10 @@
 
 ;; eglot
 (setq eglot-confirm-server-initiated-edits nil)
+
 (with-eval-after-load 'eglot
   (define-key eglot-mode-map (kbd "C-c r") 'eglot-rename)
-  (define-key eglot-mode-map (kbd "C-c p") 'eglot-format)
+  (define-key eglot-mode-map (kbd "C-c f") 'eglot-format)
   (define-key eglot-mode-map (kbd "C-c a") 'eglot-code-actions)
   (add-to-list
    'eglot-server-programs
@@ -131,6 +133,7 @@
       "-header-insertion-decorators")))
   (add-to-list 'eglot-server-programs '(java-mode . my-jdtls-contact))
   (add-to-list 'eglot-server-programs '(cmake-mode . ("cmake-language-server"))))
+
 (defun my-jdtls-contact (interactive)
   (let ((workspace (expand-file-name (md5 (project-root (project-current))) "/tmp")))
     (list "jdtls" "-data" workspace)))
@@ -157,7 +160,7 @@
 
 (defun my-c-mode-common-hook ()
   (c-toggle-electric-state 1)
-  (local-set-key (kbd "C-c o") 'ff-find-other-file)
+  (local-set-key (kbd "C-c O") 'ff-find-other-file)
   (require 'disaster))
 (add-hook 'c-mode-common-hook 'my-c-mode-common-hook)
 
