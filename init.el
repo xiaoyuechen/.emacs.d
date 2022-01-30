@@ -11,18 +11,19 @@
 (load "hdfb")
 (load "liceheader")
 
-;; environment variables
-(when (daemonp) (exec-path-from-shell-initialize))
-
 ;; global key bindings
-(global-set-key (kbd "C-c v") 'view-mode)
+(global-set-key (kbd "C-s") 'swiper-isearch)
+(global-set-key (kbd "C-x C-b") 'ibuffer)
+
 (global-set-key (kbd "C-c f") 'find-file-at-point)
 (global-set-key (kbd "C-c i") 'imenu)
 (global-set-key (kbd "C-c m") 'man)
-(global-set-key (kbd "C-c l") 'lice)
+(global-set-key (kbd "C-c V") 'view-mode)
+(global-set-key (kbd "C-c L") 'lice)
 (global-set-key (kbd "C-c R") 'rename-buffer)
-(global-set-key (kbd "C-c h") 'recentf-open-files)
 (global-set-key (kbd "C-c c") 'compile)
+(global-set-key (kbd "C-c C") 'counsel-compile)
+(global-set-key (kbd "C-c t") 'vterm)
 
 ;; mouse wheel
 (setq mouse-wheel-scroll-amount '(1 ((shift) . 1)))
@@ -34,24 +35,28 @@
 (tool-bar-mode 0)
 (scroll-bar-mode 0)
 (fringe-mode 16)
+(setq-default fill-column 80)
 (setq x-underline-at-descent-line t)
 (setq sentence-end-double-space nil)
-(auto-insert-mode 1)
-(global-auto-revert-mode 1)
-(global-visual-line-mode 1)
+(auto-insert-mode)
+(global-auto-revert-mode)
+(global-visual-line-mode)
 (add-hook 'before-save-hook 'delete-trailing-whitespace)
-(delete-selection-mode 1)
+(delete-selection-mode)
 (setq show-paren-delay 0)
-(show-paren-mode 1)
-(electric-pair-mode 1)
+(show-paren-mode)
+(electric-pair-mode)
 (add-hook 'ibuffer-mode-hook 'ibuffer-auto-mode)
 (setq gdb-many-windows t)
-(which-key-mode 1)
+(which-key-mode)
 (setq imenu-auto-rescan t)
-(setq ido-enable-flex-matching t)
-(ido-mode 1)
 (setq recentf-max-saved-items 200)
-(recentf-mode 1)
+(recentf-mode)
+(setq-default indent-tabs-mode nil)
+(setq enable-recursive-minibuffers t)
+(ivy-mode)
+(setq ivy-use-virtual-buffers t)
+(counsel-mode)
 
 ;; bash completion
 (add-hook 'shell-dynamic-complete-functions
@@ -75,18 +80,21 @@
 (with-eval-after-load 'flymake
   (define-key flymake-mode-map (kbd "C-c e n") 'flymake-goto-next-error)
   (define-key flymake-mode-map (kbd "C-c e p") 'flymake-goto-prev-error)
-  (define-key flymake-mode-map (kbd "C-c e l") 'flymake-show-diagnostics-buffer)
-  (define-key flymake-mode-map (kbd "M-n") 'flymake-goto-next-error)
-  (define-key flymake-mode-map (kbd "M-p") 'flymake-goto-prev-error))
+  (define-key flymake-mode-map (kbd "C-c e l") 'flymake-show-diagnostics-buffer))
 
 ;; vterm
-(setq vterm-buffer-name-string "vterm %s")
+(setq vterm-buffer-name-string "*Vterm %s*")
+(defun vterm-shell-command (cmd)
+  (vterm)
+  (vterm-send-string (concat "exec /bin/sh -c " cmd))
+  (vterm-send-return))
 
 ;; dired
 (defun xdg-open-dired ()
   (interactive)
-  (start-process-shell-command "xdg-open" nil "xdg-open"
-			       (concat "\"" (dired-get-filename) "\"")))
+  (let ((file (dired-get-filename nil t)))
+    (call-process "xdg-open" nil 0 nil file)))
+
 (with-eval-after-load 'dired
   (define-key dired-mode-map (kbd "C-c f") 'xdg-open-dired))
 
@@ -113,7 +121,7 @@
 (setq eglot-confirm-server-initiated-edits nil)
 (with-eval-after-load 'eglot
   (define-key eglot-mode-map (kbd "C-c r") 'eglot-rename)
-  (define-key eglot-mode-map (kbd "C-c t") 'eglot-format)
+  (define-key eglot-mode-map (kbd "C-c p") 'eglot-format)
   (define-key eglot-mode-map (kbd "C-c a") 'eglot-code-actions)
   (add-to-list
    'eglot-server-programs
@@ -128,21 +136,21 @@
     (list "jdtls" "-data" workspace)))
 
 ;; compilation buffer
-(defun colorize-compilation-buffer ()
-  (let ((inhibit-read-only t))
-    (ansi-color-apply-on-region (point-min) (point-max))))
-(add-hook 'compilation-filter-hook 'colorize-compilation-buffer)
+;; (defun colorize-compilation-buffer ()
+;;   (let ((inhibit-read-only t))
+;;     (ansi-color-apply-on-region (point-min) (point-max))))
+;; (add-hook 'compilation-filter-hook 'colorize-compilation-buffer)
 
 (defun my-emacs-lisp-mode-hook ()
   (flymake-mode))
 (add-hook 'emacs-lisp-mode-hook 'my-emacs-lisp-mode-hook)
 
 (defun my-text-mode-hook ()
-  (flyspell-mode))
+  (flyspell-mode)
+  (auto-fill-mode))
 (add-hook 'text-mode-hook 'my-text-mode-hook)
 
 (defun my-prog-mode-hook ()
-  (setq fill-column 80)
   (flyspell-prog-mode)
   (company-mode))
 (add-hook 'prog-mode-hook 'my-prog-mode-hook)
@@ -186,6 +194,8 @@
 
 (add-to-list 'auto-mode-alist '("\\.cl\\'" . opencl-mode))
 
+(add-to-list 'auto-mode-alist '("makefile" . makefile-gmake-mode))
+
 (pdf-loader-install)
 
 ;; disaster
@@ -198,7 +208,8 @@
   (save-buffer)
   (TeX-command-run-all nil))
 (with-eval-after-load 'tex
-  (define-key TeX-mode-map (kbd "C-c c") 'my-TeX-command-run-all))
+  (define-key TeX-mode-map (kbd "C-c c") 'my-TeX-command-run-all)
+  (add-to-list 'TeX-view-program-selection '(output-pdf "xdg-open")))
 (setq-default TeX-master nil)
 (setq-default TeX-engine 'luatex)
 (setq TeX-auto-save t)
