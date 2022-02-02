@@ -18,12 +18,13 @@
 (global-set-key (kbd "C-c o") 'find-file-at-point)
 (global-set-key (kbd "C-c i") 'imenu)
 (global-set-key (kbd "C-c m") 'man)
-(global-set-key (kbd "C-c V") 'view-mode)
-(global-set-key (kbd "C-c L") 'lice)
-(global-set-key (kbd "C-c R") 'rename-buffer)
 (global-set-key (kbd "C-c c") 'compile)
 (global-set-key (kbd "C-c C") 'counsel-compile)
 (global-set-key (kbd "C-c t") 'vterm)
+(global-set-key (kbd "C-c l") 'org-store-link)
+(global-set-key (kbd "C-c V") 'view-mode)
+(global-set-key (kbd "C-c L") 'lice)
+(global-set-key (kbd "C-c R") 'rename-buffer)
 
 ;; mouse wheel
 (setq mouse-wheel-scroll-amount '(1 ((shift) . 1)))
@@ -35,7 +36,6 @@
 (tool-bar-mode 0)
 (scroll-bar-mode)
 (fringe-mode '(16 . 0))
-(setq-default fill-column 80)
 (setq x-underline-at-descent-line t)
 (setq sentence-end-double-space nil)
 (auto-insert-mode)
@@ -57,6 +57,11 @@
 (ivy-mode)
 (setq ivy-use-virtual-buffers t)
 (counsel-mode)
+
+;; org
+(with-eval-after-load 'org
+  (require 'oc-biblatex)
+  (setq org-adapt-indentation t))
 
 ;; bash completion
 (add-hook 'shell-dynamic-complete-functions
