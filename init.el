@@ -6,25 +6,21 @@
 
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 
-;; hacking packages
+;; own packages
 (add-to-list 'load-path "~/.emacs.d/hacks")
 (load "hdfb")
-(load "liceheader")
 
 ;; global key bindings
-(global-set-key (kbd "C-s") 'swiper-isearch)
 (global-set-key (kbd "C-x C-b") 'ibuffer)
-
-(global-set-key (kbd "C-c o") 'find-file-at-point)
 (global-set-key (kbd "C-c i") 'imenu)
 (global-set-key (kbd "C-c m") 'man)
 (global-set-key (kbd "C-c c") 'compile)
-(global-set-key (kbd "C-c C") 'counsel-compile)
 (global-set-key (kbd "C-c t") 'vterm)
 (global-set-key (kbd "C-c l") 'org-store-link)
-(global-set-key (kbd "C-c V") 'view-mode)
 (global-set-key (kbd "C-c L") 'lice)
+(global-set-key (kbd "C-c h") 'recentf-open-files)
 (global-set-key (kbd "C-c R") 'rename-buffer)
+(global-set-key (kbd "C-c F") 'locate)
 
 ;; mouse wheel
 (setq mouse-wheel-scroll-amount '(1 ((shift) . 1)))
@@ -50,18 +46,40 @@
 (setq gdb-many-windows t)
 (which-key-mode)
 (setq imenu-auto-rescan t)
-(setq recentf-max-saved-items 200)
+(setq recentf-max-saved-items 1000)
 (recentf-mode)
+(savehist-mode)
 (setq-default indent-tabs-mode nil)
 (setq enable-recursive-minibuffers t)
-(ivy-mode)
-(setq ivy-use-virtual-buffers t)
-(counsel-mode)
+(setq read-file-name-completion-ignore-case t
+      read-buffer-completion-ignore-case t
+      completion-ignore-case t)
+(ffap-bindings)
+(require 'lice)
+
+;; autoinsert
+(with-eval-after-load 'autoinsert
+  (let ((insert-lice (lambda nil
+                       (lice lice:default-license)
+                       (insert "\n")))
+        (c-header-condition '("\\.\\([Hh]\\|hh\\|hpp\\|hxx\\|h\\+\\+\\)\\'" . "C / C++ header"))
+        (c-source-condition '("\\.\\([Cc]\\|cc\\|cpp\\|cxx\\|c\\+\\+\\)\\'" . "C / C++ program")))
+    (define-auto-insert c-header-condition insert-lice)
+    (define-auto-insert c-source-condition insert-lice)))
+
+;; copyright
+(add-hook 'before-save-hook 'copyright-update)
+
+;; elide-head
+(add-hook 'find-file-hook 'elide-head)
 
 ;; org
 (with-eval-after-load 'org
   (require 'oc-biblatex)
-  (setq org-adapt-indentation t))
+  (setq org-adapt-indentation t)
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((shell . t))))
 
 ;; bash completion
 (add-hook 'shell-dynamic-complete-functions
@@ -69,8 +87,6 @@
 
 ;; tramp
 (with-eval-after-load 'tramp
-  (add-to-list 'tramp-connection-properties
-               (list nil "remote-shell" "/bin/bash"))
   (add-to-list 'tramp-remote-path 'tramp-own-remote-path))
 
 ;; flyspell
@@ -130,24 +146,12 @@
   (define-key eglot-mode-map (kbd "C-c r") 'eglot-rename)
   (define-key eglot-mode-map (kbd "C-c f") 'eglot-format)
   (define-key eglot-mode-map (kbd "C-c a") 'eglot-code-actions)
-  (add-to-list
-   'eglot-server-programs
-   '((c-mode c++mode) .
-     ("clangd" "-background-index" "-clang-tidy" "-completion-style=detailed"
-      "-cross-file-rename" "-header-insertion=iwyu"
-      "-header-insertion-decorators")))
   (add-to-list 'eglot-server-programs '(java-mode . my-jdtls-contact))
   (add-to-list 'eglot-server-programs '(cmake-mode . ("cmake-language-server"))))
 
 (defun my-jdtls-contact (interactive)
   (let ((workspace (expand-file-name (md5 (project-root (project-current))) "/tmp")))
     (list "jdtls" "-data" workspace)))
-
-;; compilation buffer
-;; (defun colorize-compilation-buffer ()
-;;   (let ((inhibit-read-only t))
-;;     (ansi-color-apply-on-region (point-min) (point-max))))
-;; (add-hook 'compilation-filter-hook 'colorize-compilation-buffer)
 
 (defun my-emacs-lisp-mode-hook ()
   (flymake-mode))
@@ -165,17 +169,20 @@
 
 (defun my-c-mode-common-hook ()
   (c-toggle-electric-state 1)
-  (local-set-key (kbd "C-c O") 'ff-find-other-file)
-  (require 'disaster))
+  (c-toggle-comment-style 1))
 (add-hook 'c-mode-common-hook 'my-c-mode-common-hook)
 
 (defun my-c-mode-hook ()
+  (require 'disaster)
   (yas-minor-mode)
+  (local-set-key (kbd "C-c O") 'ff-find-other-file)
   (eglot-ensure))
 (add-hook 'c-mode-hook 'my-c-mode-hook)
 
 (defun my-c++-mode-hook ()
+  (require 'disaster)
   (yas-minor-mode)
+  (local-set-key (kbd "C-c O") 'ff-find-other-file)
   (eglot-ensure))
 (add-hook 'c++-mode-hook 'my-c++-mode-hook)
 
