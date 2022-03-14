@@ -4,6 +4,7 @@
 (setq custom-file "~/.emacs.d/custom.el")
 (load custom-file)
 
+(require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 
 ;; own packages
@@ -15,7 +16,6 @@
 (global-set-key (kbd "C-c i") 'imenu)
 (global-set-key (kbd "C-c m") 'man)
 (global-set-key (kbd "C-c c") 'compile)
-(global-set-key (kbd "C-c t") 'vterm)
 (global-set-key (kbd "C-c l") 'org-store-link)
 (global-set-key (kbd "C-c L") 'lice)
 (global-set-key (kbd "C-c h") 'recentf-open-files)
@@ -210,8 +210,6 @@
 (add-to-list 'auto-mode-alist '("\\.cl\\'" . opencl-mode))
 
 (add-to-list 'auto-mode-alist '("makefile" . makefile-gmake-mode))
-
-(pdf-loader-install)
 
 ;; disaster
 (with-eval-after-load 'disaster
