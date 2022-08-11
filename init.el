@@ -1,254 +1,305 @@
-(setq user-full-name "Xiaoyue Chen")
-(setq user-mail-address "xiaoyue.chen.0484@student.uu.se")
+;;; init.el --- My personal Emacs init file          -*- lexical-binding: t; -*-
+
+;; Copyright (C) 2022  Xiaoyue Chen
+
+;; Author: Xiaoyue Chen <xiaoyue.chen@it.uu.se>
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;;
+
+;;; Code:
+
+(setq user-full-name "Xiaoyue Chen"
+      user-mail-address "xiaoyue.chen@it.uu.se")
 
 (setq custom-file "~/.emacs.d/custom.el")
 (load custom-file)
 
-(require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 
-;; own packages
-(add-to-list 'load-path "~/.emacs.d/hacks")
-(load "hdfb")
+(setq use-package-hook-name-suffix nil)
 
-;; global key bindings
-(global-set-key (kbd "C-x C-b") 'ibuffer)
-(global-set-key (kbd "C-c i") 'imenu)
-(global-set-key (kbd "C-c m") 'man)
-(global-set-key (kbd "C-c c") 'compile)
-(global-set-key (kbd "C-c l") 'org-store-link)
-(global-set-key (kbd "C-c L") 'lice)
-(global-set-key (kbd "C-c h") 'recentf-open-files)
-(global-set-key (kbd "C-c R") 'rename-buffer)
-(global-set-key (kbd "C-c F") 'locate)
-
-;; mouse wheel
-(setq mouse-wheel-scroll-amount '(1 ((shift) . 1)))
-(setq mouse-wheel-progressive-speed nil)
-(setq mouse-wheel-follow-mouse 't)
-
-;; modes
-(menu-bar-mode 0)
-(tool-bar-mode 0)
-(scroll-bar-mode)
-(fringe-mode '(16 . 0))
 (setq x-underline-at-descent-line t)
-(setq sentence-end-double-space nil)
-(auto-insert-mode)
-(global-auto-revert-mode)
-(global-visual-line-mode)
-(add-hook 'before-save-hook 'delete-trailing-whitespace)
-(delete-selection-mode)
-(setq show-paren-delay 0)
-(show-paren-mode)
-(electric-pair-mode)
-(add-hook 'ibuffer-mode-hook 'ibuffer-auto-mode)
-(setq gdb-many-windows t)
-(which-key-mode)
-(setq imenu-auto-rescan t)
-(setq recentf-max-saved-items 1000)
-(recentf-mode)
-(savehist-mode)
-(setq-default indent-tabs-mode nil)
 (setq enable-recursive-minibuffers t)
 (setq read-file-name-completion-ignore-case t
       read-buffer-completion-ignore-case t
       completion-ignore-case t)
-(ffap-bindings)
-(require 'lice)
-
-;; autoinsert
-(with-eval-after-load 'autoinsert
-  (let ((insert-lice (lambda nil
-                       (lice lice:default-license)
-                       (insert "\n")))
-        (c-header-condition '("\\.\\([Hh]\\|hh\\|hpp\\|hxx\\|h\\+\\+\\)\\'" . "C / C++ header"))
-        (c-source-condition '("\\.\\([Cc]\\|cc\\|cpp\\|cxx\\|c\\+\\+\\)\\'" . "C / C++ program")))
-    (define-auto-insert c-header-condition insert-lice)
-    (define-auto-insert c-source-condition insert-lice)))
-
-;; copyright
-(add-hook 'before-save-hook 'copyright-update)
-
-;; elide-head
-(add-hook 'find-file-hook 'elide-head)
-
-;; org
-(with-eval-after-load 'org
-  (require 'oc-biblatex)
-  (setq org-adapt-indentation t)
-  (org-babel-do-load-languages
-   'org-babel-load-languages
-   '((shell . t))))
-
-;; bash completion
-(add-hook 'shell-dynamic-complete-functions
-	  'bash-completion-dynamic-complete)
-
-;; tramp
-(with-eval-after-load 'tramp
-  (add-to-list 'tramp-remote-path 'tramp-own-remote-path))
-
-;; flyspell
-(with-eval-after-load 'flyspell
-  (define-key flyspell-mode-map (kbd "C-.") nil)
-  (define-key flyspell-mode-map (kbd "C-M-i") nil))
-
-;; flymake
-(setq flymake-error-bitmap '(hdfb-double-exclamation-mark compilation-error))
-(setq flymake-warning-bitmap '(hdfb-exclamation-mark compilation-warning))
-(setq flymake-note-bitmap '(hdfb-exclamation-mark compilation-info))
-(with-eval-after-load 'flymake
-  (define-key flymake-mode-map (kbd "C-c e n") 'flymake-goto-next-error)
-  (define-key flymake-mode-map (kbd "C-c e p") 'flymake-goto-prev-error)
-  (define-key flymake-mode-map (kbd "C-c e l") 'flymake-show-diagnostics-buffer))
-
-;; vterm
-(setq vterm-buffer-name-string "*Vterm %s*")
-(setq vterm-max-scrollback 10000)
-(defun vterm-shell-command (cmd)
-  (vterm)
-  (vterm-send-string (concat "exec /bin/sh -c " cmd))
-  (vterm-send-return))
-
-;; dired
-(defun xdg-open-dired ()
-  (interactive)
-  (let ((file (dired-get-filename nil t)))
-    (call-process "xdg-open" nil 0 nil file)))
-
-(with-eval-after-load 'dired
-  (define-key dired-mode-map (kbd "C-c o") 'xdg-open-dired))
-
-;; eldoc
-(eldoc-add-command 'c-electric-paren)
-
-;; magit
-(setq magit-section-visibility-indicator
-      '(hdfb-plus . hdfb-minus))
-(defun my-magit-mode-hook ()
-  (setq left-fringe-width 32))
-(add-hook 'magit-mode-hook 'my-magit-mode-hook)
-(global-set-key (kbd "C-x M-g") 'magit-dispatch)
-
-;; company
-(setq company-minimum-prefix-length 3
-      company-idle-delay 0.0)
-
-;; yasnippet
-(with-eval-after-load 'yasnippet
-  (yas-reload-all))
-
-;; eglot
-(setq eglot-confirm-server-initiated-edits nil)
-
-(with-eval-after-load 'eglot
-  (define-key eglot-mode-map (kbd "C-c r") 'eglot-rename)
-  (define-key eglot-mode-map (kbd "C-c f") 'eglot-format)
-  (define-key eglot-mode-map (kbd "C-c a") 'eglot-code-actions)
-  (add-to-list 'eglot-server-programs '(java-mode . my-jdtls-contact))
-  (add-to-list 'eglot-server-programs '(cmake-mode . ("cmake-language-server"))))
-
-(defun my-jdtls-contact (interactive)
-  (let ((workspace (expand-file-name (md5 (project-root (project-current))) "/tmp")))
-    (list "jdtls" "-data" workspace)))
-
-(defun my-emacs-lisp-mode-hook ()
-  (flymake-mode))
-(add-hook 'emacs-lisp-mode-hook 'my-emacs-lisp-mode-hook)
-
-(defun my-text-mode-hook ()
-  (flyspell-mode)
-  (auto-fill-mode))
-(add-hook 'text-mode-hook 'my-text-mode-hook)
-
-(defun my-prog-mode-hook ()
-  (flyspell-prog-mode)
-  (company-mode))
-(add-hook 'prog-mode-hook 'my-prog-mode-hook)
-
-(defun my-c-mode-common-hook ()
-  (c-toggle-electric-state 1)
-  (c-toggle-comment-style 1))
-(add-hook 'c-mode-common-hook 'my-c-mode-common-hook)
-
-(defun my-c-mode-hook ()
-  (require 'disaster)
-  (yas-minor-mode)
-  (local-set-key (kbd "C-c O") 'ff-find-other-file)
-  (eglot-ensure))
-(add-hook 'c-mode-hook 'my-c-mode-hook)
-
-(defun my-c++-mode-hook ()
-  (require 'disaster)
-  (yas-minor-mode)
-  (local-set-key (kbd "C-c O") 'ff-find-other-file)
-  (eglot-ensure))
-(add-hook 'c++-mode-hook 'my-c++-mode-hook)
-
-(defun my-java-mode-hook ()
-  (yas-minor-mode)
-  (eglot-ensure))
-(add-hook 'java-mode-hook 'my-java-mode-hook)
-
-(defun my-python-mode-hook ()
-  (yas-minor-mode)
-  (eglot-ensure))
-(add-hook 'python-mode-hook 'my-python-mode-hook)
-
-(defun my-haskell-mode-hook ()
-  (yas-minor-mode)
-  (eglot-ensure))
-(add-hook 'haskell-mode-hook 'my-haskell-mode-hook)
-
-(add-to-list 'auto-mode-alist '("\\.mzn\\'" . minizinc-mode))
-(defun my-minizinc-mode-hook ()
-  (c-toggle-electric-state -1)
-  (c-toggle-auto-newline -1))
-(add-hook 'minizinc-mode-hook 'my-minizinc-mode-hook)
-
-(add-to-list 'auto-mode-alist '("\\.cl\\'" . opencl-mode))
-
-(add-to-list 'auto-mode-alist '("makefile" . makefile-gmake-mode))
-
-;; disaster
-(with-eval-after-load 'disaster
-  (define-key c-mode-base-map (kbd "C-c d") 'disaster))
-
-;; LaTeX
-(defun my-TeX-command-run-all ()
-  (interactive)
-  (save-buffer)
-  (TeX-command-run-all nil))
-(with-eval-after-load 'tex
-  (define-key TeX-mode-map (kbd "C-c c") 'my-TeX-command-run-all)
-  (add-to-list 'TeX-view-program-selection '(output-pdf "xdg-open")))
-(setq-default TeX-master nil)
-(setq-default TeX-engine 'luatex)
-(setq TeX-auto-save t)
-(setq TeX-parse-self t)
-(setq TeX-source-correlate-start-server t)
-(setq TeX-electric-math '("\\(" . "\\)"))
-(setq TeX-electric-sub-and-superscript t)
-(setq LaTeX-electric-left-right-brace t)
-(setq reftex-plug-into-AUCTeX t)
-(defun my-LaTeX-mode-hook ()
-  (yas-minor-mode)
-  (eglot-ensure)
-  (company-mode)
-  (turn-on-reftex)
-  (turn-on-auto-fill)
-  (LaTeX-math-mode)
-  (setq prettify-symbols-unprettify-at-point t)
-  (prettify-symbols-mode)
-  (TeX-fold-mode)
-  (TeX-source-correlate-mode))
-(add-hook 'LaTeX-mode-hook 'my-LaTeX-mode-hook)
-(add-hook 'TeX-after-compilation-finished-functions
-	  'TeX-revert-document-buffer)
+(setq sentence-end-double-space nil)
+(setq require-final-newline t)
+(setq-default indent-tabs-mode nil)
+(add-hook 'before-save-hook 'delete-trailing-whitespace)
 
 (put 'narrow-to-region 'disabled nil)
 (put 'narrow-to-page 'disabled nil)
 (put 'dired-find-alternate-file 'disabled nil)
 (put 'upcase-region 'disabled nil)
 (put 'downcase-region 'disabled nil)
+
+;; (defun enable-dsktenv (_)
+;;   (load "~/.emacs.d/dsktenv.el"))
+
+;; (defun my-cmd-args ()
+;;   (add-to-list 'command-switch-alist '("--dsktenv" . enable-dsktenv)))
+
+(use-package menu-bar
+  :init
+  (menu-bar-mode 0))
+
+(use-package tool-bar
+  :init
+  (tool-bar-mode 0))
+
+(use-package paren
+  :init
+  (setq show-paren-delay 0)
+  (show-paren-mode))
+
+(use-package elec-pair
+  :init
+  (electric-pair-mode))
+
+(use-package delsel
+  :init
+  (delete-selection-mode))
+
+(use-package savehist
+  :init
+  (savehist-mode))
+
+(use-package ffap
+  :init
+  (ffap-bindings))
+
+(use-package locate
+  :bind
+  (("C-c F" . locate)))
+
+(use-package recentf
+  :init
+  (setq recentf-max-saved-items 1000)
+  (recentf-mode)
+  :bind
+  (("C-c h" . recentf-open-files)))
+
+(use-package ibuffer
+  :config
+  (add-hook 'ibuffer-mode-hook 'ibuffer-auto-mode)
+  :bind
+  (("C-x C-b" . ibuffer)))
+
+(use-package imenu
+  :init
+  (setq imenu-auto-rescan t)
+  :bind
+  (("C-c i" . imenu)))
+
+(use-package compile
+  :bind
+  (("C-c c" . compile)))
+
+(use-package mwheel
+  :init
+  (setq mouse-wheel-scroll-amount '(1 ((shift) . 1))
+        mouse-wheel-progressive-speed nil
+        mouse-wheel-follow-mouse 't))
+
+(use-package gdb-mi
+  :init
+  (setq gdb-many-windows t))
+
+(use-package which-key
+  :init
+  (which-key-mode))
+
+(use-package autorevert
+  :init
+  (global-auto-revert-mode))
+
+(use-package comint
+  :init
+  (setq comint-prompt-read-only t
+        comint-buffer-maximum-size 20000))
+
+(use-package autoinsert
+  :init
+  (let ((insert-lice (lambda () (lice lice:default-license)
+                       (insert "\n")))
+        (c-header-condition
+         '("\\.\\([Hh]\\|hh\\|hpp\\|hxx\\|h\\+\\+\\)\\'" . "C / C++ header"))
+        (c-source-condition
+         '("\\.\\([Cc]\\|cc\\|cpp\\|cxx\\|c\\+\\+\\)\\'" . "C / C++ program")))
+    (define-auto-insert c-header-condition 'insert-lice)
+    (define-auto-insert c-source-condition 'insert-lice))
+  (auto-insert-mode))
+
+(use-package copyright
+  :hook
+  (before-save-hook . copyright-update))
+
+(use-package elide-head
+  :hook
+  (file-file-hook . elide-head))
+
+(use-package org
+  :init
+  (setq org-adapt-indentation t)
+  :config
+  (use-package oc-biblatex)
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((shell . t)))
+  :bind
+  (("C-c l" . org-store-link)))
+
+(use-package bash-completion
+  :hook
+  (shell-dynamic-complete-functions . bash-completion-dynamic-complete))
+
+(use-package tramp
+  :config
+  (add-to-list 'tramp-remote-path 'tramp-own-remote-path))
+
+(use-package flyspell
+  :bind
+  (:map flyspell-mode-map
+        ("C-." . nil)
+        ("C-M-i" . nil))
+  :hook
+  ((text-mode-hook . flyspell-mode)
+   (prog-mode-hook . flyspell-prog-mode)))
+
+(use-package flymake
+  :bind
+  (:map flymake-mode-map
+        ("C-c e n" . flymake-goto-next-error)
+        ("C-c e p" . flymake-goto-prev-error)
+        ("C-c e l" . flymake-show-diagnostics-buffer))
+  :hook
+  (prog-mode-hook . flymake-mode))
+
+(use-package dired
+  :bind
+  (:map dired-mode-map
+        ("C-c o" . (lambda () (interactive)
+                     (call-process "xdg-open" nil 0 nil
+                                   (dired-get-filename nil t))))))
+
+(use-package eldoc
+  :config
+  (eldoc-add-command 'c-electric-paren))
+
+(use-package magit)
+
+(use-package company
+  :init
+  (setq company-minimum-prefix-length 3
+        company-idle-delay 0.0)
+  :hook
+  (prog-mode-hook . company-mode)
+  (latex-mode-hook . company-mode))
+
+(use-package yasnippet
+  :config
+  (yas-reload-all))
+
+(use-package hideshow
+  :hook
+  (prog-mode-hook . hs-minor-mode))
+
+(use-package eglot
+  :init
+  (setq eglot-confirm-server-initiated-edits nil)
+  :bind
+  (:map eglot-mode-map
+        ("C-c r" . eglot-rename)
+        ("C-c f" . eglot-format)
+        ("C-c a" . eglot-code-actions))
+  :config
+  (add-to-list 'eglot-server-programs '(cmake-mode . ("cmake-language-server")))
+  (cl-flet ((my-jdtls-contact (interactive)
+                              (let ((workspace
+                                     (expand-file-name
+                                      (md5 (project-root (project-current)))
+                                      "/tmp")))
+                                (list "jdtls" "-data" workspace))))
+    (add-to-list 'eglot-server-programs '(java-mode . my-jdtls-contact)))
+  :hook
+  ((c-mode-hook c++-mode-hook java-mode-hook python-mode-hook haskell-mode-hook)
+   . (eglot-ensure)))
+
+(use-package text-mode
+  :config
+  (auto-fill-mode))
+
+(use-package cc-mode
+  :config
+  (dolist (map '(c-mode-map c++-mode-map))
+    (bind-key "C-c o" 'ff-find-other-file map)
+    (bind-key "C-c d" 'disaster map))
+  :hook
+  (c-mode-common-hook . (lambda ()
+                          (c-toggle-electric-state 1)
+                          (c-toggle-comment-style 1)))
+  (minizinc-mode-hook . (lambda ()
+                          (c-toggle-electric-state -1))))
+
+(use-package minizinc-mode
+  :mode
+  "\\.mzn\\'")
+
+(use-package opencl-mode
+  :mode
+  "\\.cl\\'")
+
+(use-package make-mode
+  :mode
+  ("makefile" . makefile-gmake-mode))
+
+(use-package langtool
+  :init
+  (setq langtool-java-classpath
+        "/usr/share/languagetool:/usr/share/java/languagetool/*"))
+
+(use-package tex
+  :init
+  (setq-default TeX-master nil)
+  (setq TeX-auto-save t)
+  (setq TeX-parse-self t)
+  (setq TeX-source-correlate-start-server t)
+  (setq TeX-electric-math '("\\(" . "\\)"))
+  (setq TeX-electric-sub-and-superscript t)
+  (setq LaTeX-electric-left-right-brace t)
+  (setq reftex-plug-into-AUCTeX t)
+  (setq prettify-symbols-unprettify-at-point t)
+  :config
+  (add-to-list 'TeX-view-program-selection '(output-pdf "xdg-open"))
+  :bind
+  (:map TeX-mode-map
+        ("C-c c" . (lambda () (interactive)
+                     (save-buffer)
+                     (TeX-command-run-all nil))))
+  :hook
+  (LaTeX-mode-hook . (lambda ()
+                       (turn-on-reftex)
+                       (turn-on-auto-fill)
+                       (LaTeX-math-mode)
+                       (prettify-symbols-mode)
+                       (TeX-fold-mode)
+                       (TeX-source-correlate-mode))))
+
+
+;;; init.el ends here
