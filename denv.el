@@ -136,6 +136,9 @@
 
   (exwm-enable))
 
+(defun ednc-buffer () (interactive)
+       (switch-to-buffer ednc-log-name))
+
 (use-package ednc
   :demand
   :config
@@ -146,7 +149,6 @@
             (lambda (&rest _) (force-mode-line-update t)))
   (ednc-mode)
   :bind
-  (("C-c n" . (lambda () (interactive)
-                (switch-to-buffer ednc-log-name)))))
+  (("C-c n" . ednc-buffer)))
 
 ;;; desktop.el ends here

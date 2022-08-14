@@ -41,6 +41,7 @@
 (setq require-final-newline t)
 (setq-default indent-tabs-mode nil)
 (setq delete-by-moving-to-trash t)
+(setq async-shell-command-buffer 'new-buffer)
 
 (put 'narrow-to-region 'disabled nil)
 (put 'narrow-to-page 'disabled nil)
@@ -51,9 +52,17 @@
 (use-package doom-modeline
   :config (doom-modeline-mode))
 
+(use-package eshell
+  :defer
+  :config
+  (add-to-list 'eshell-modules-list 'eshell-tramp)
+  (setq eshell-visual-commands
+        (seq-union '("vim" "nmtui" "alsamixer")
+                   eshell-visual-commands)))
+
 (use-package bash-completion
-    :hook
-    (shell-dynamic-complete-functions . bash-completion-dynamic-complete))
+  :hook
+  (shell-dynamic-complete-functions . bash-completion-dynamic-complete))
 
 (use-package savehist
   :config
@@ -83,6 +92,15 @@
   (ido-mode))
 
 (use-package simple
+  :demand
+  :config
+  (advice-add 'async-shell-command :after
+              (lambda (command &optional output-buffer error-buffer)
+                (unless output-buffer
+                  (let ((output-buffer
+                         (concat "*CMD " command "*")))
+                    (with-current-buffer shell-command-buffer-name-async
+                      (rename-buffer output-buffer t))))))
   :hook
   (before-save-hook . delete-trailing-whitespace))
 
@@ -201,12 +219,14 @@
   :hook
   (prog-mode-hook . flymake-mode))
 
+(defun xdg-open () (interactive)
+       (call-process "xdg-open" nil 0 nil
+                     (dired-get-filename nil t)))
+
 (use-package dired
   :bind
   (:map dired-mode-map
-        ("C-c o" . (lambda () (interactive)
-                     (call-process "xdg-open" nil 0 nil
-                                   (dired-get-filename nil t))))))
+        ("C-c o" . xdg-open)))
 
 (use-package eldoc
   :config
