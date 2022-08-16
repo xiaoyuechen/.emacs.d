@@ -138,7 +138,7 @@
   :config
   (defun exwm-update-buffer-name ()
     (exwm-workspace-rename-buffer
-     (concat exwm-class-name " — "
+     (concat exwm-class-name ": "
              (truncate-string-to-width
               (or exwm-title "") 25 nil nil t))))
   (exwm-enable)
