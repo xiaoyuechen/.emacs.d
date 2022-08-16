@@ -148,6 +148,8 @@
 (use-package recentf
   :init
   (setq recentf-max-saved-items 1000)
+  (setq recentf-menu-filter 'recentf-arrange-by-dir)
+  (setq recentf-auto-cleanup nil)
   (recentf-mode)
   :bind
   (("C-c h" . recentf-open-files)))
