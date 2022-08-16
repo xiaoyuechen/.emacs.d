@@ -49,6 +49,12 @@
 (put 'upcase-region 'disabled nil)
 (put 'downcase-region 'disabled nil)
 
+(use-package desktop
+  :init
+  (setq desktop-restore-frames nil)
+  :config
+  (desktop-save-mode))
+
 (use-package doom-modeline
   :config
   (doom-modeline-mode))
@@ -67,7 +73,7 @@
       (add-to-list 'eshell-visual-commands command))))
 
 (use-package bash-completion
-  :init
+  :config
   (defun bash-completion-eshell-capf ()
     (append (bash-completion-dynamic-complete-nocomint
              (save-excursion (eshell-bol) (point))
@@ -239,16 +245,16 @@
   :hook
   (prog-mode-hook . flymake-mode))
 
-(defun xdg-open ()
-  (interactive)
-  (call-process "xdg-open" nil 0 nil
-                (dired-get-filename nil t)))
-
 (use-package dired
+  :config
+  (defun xdg-open-from-dired ()
+    (interactive)
+    (call-process "xdg-open" nil 0 nil
+                  (dired-get-filename nil t)))
   :bind
   (nil
    :map dired-mode-map
-   ("C-c o" . xdg-open)))
+   ("C-c o" . xdg-open-from-dired)))
 
 (use-package eldoc
   :config
