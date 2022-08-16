@@ -67,38 +67,34 @@
   (display-battery-mode))
 
 (use-package desktop-environment
-  :demand
   :init
   (setq desktop-environment-screenlock-command "xscreensaver-command --lock")
   :bind
   (nil
    :map desktop-environment-mode-map
-   ("<XF86KbdBrightnessUp>" . desktop-environment-keyboard-backlight-increment)
-   ("<XF86KbdBrightnessDown>" . desktop-environment-keyboard-backlight-decrement))
-  :config
-  (desktop-environment-mode))
+   ("<XF86KbdBrightnessUp>"
+    . desktop-environment-keyboard-backlight-increment)
+   ("<XF86KbdBrightnessDown>"
+    . desktop-environment-keyboard-backlight-decrement)))
 
 (use-package exwm-config
-  :config
+  :commands
   (exwm-config-ido))
 
 (use-package exwm-systemtray
-  :config
+  :commands
   (exwm-systemtray-enable))
 
 (use-package exwm-randr
-  :demand
+  :commands
+  (exwm-randr-enable)
   :init
   (setq exwm-randr-workspace-monitor-plist
         '(0 "eDP-1-1"))
-  :config
-  (exwm-randr-enable)
   :hook
   (exwm-randr-screen-change-hook . set-kbd-repeat-rate))
 
-
 (use-package exwm
-  :after (desktop-environment exwm-config exwm-systemtray exwm-randr)
   :demand
   :init
   (setq exwm-workspace-number 4)
@@ -111,8 +107,8 @@
                           (exwm-workspace-switch-create ,i))))
                     (number-sequence 0 9))
           ([?\s-&] . (lambda (command)
-		       (interactive (list (read-shell-command "$ ")))
-		       (start-process-shell-command command nil command)))
+        	       (interactive (list (read-shell-command "$ ")))
+        	       (start-process-shell-command command nil command)))
           ([?\s-b] . switch-to-buffer)
           ([?\s-o] . other-window)))
   (setq exwm-input-simulation-keys
@@ -141,6 +137,10 @@
      (concat exwm-class-name ": "
              (truncate-string-to-width
               (or exwm-title "") 25 nil nil t))))
+  (desktop-environment-mode)
+  (exwm-config-ido)
+  (exwm-systemtray-enable)
+  (exwm-randr-enable)
   (exwm-enable)
   :bind
   (nil
@@ -149,8 +149,6 @@
   :hook
   (exwm-update-class-hook . exwm-update-buffer-name)
   (exwm-update-title-hook . exwm-update-buffer-name))
-
-
 
 (use-package ednc
   :demand
