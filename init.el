@@ -50,27 +50,44 @@
 (put 'downcase-region 'disabled nil)
 
 (use-package doom-modeline
-  :config (doom-modeline-mode))
+  :config
+  (doom-modeline-mode))
 
 (use-package eshell
   :defer
   :config
-  (add-to-list 'eshell-modules-list 'eshell-tramp)
-  (setq eshell-visual-commands
-        (seq-union '("vim" "nmtui" "alsamixer")
-                   eshell-visual-commands)))
+  (use-package esh-module
+    :config
+    (add-to-list 'eshell-modules-list 'eshell-tramp))
+  (use-package em-term
+    :init
+    (setq eshell-destroy-buffer-when-process-dies t)
+    :config
+    (dolist (command '("vim" "nmtui" "alsamixer"))
+      (add-to-list 'eshell-visual-commands command))))
 
 (use-package bash-completion
+  :init
+  (defun bash-completion-eshell-capf ()
+    (append (bash-completion-dynamic-complete-nocomint
+             (save-excursion (eshell-bol) (point))
+             (point) t)
+            '(:exclusive no)))
+
+  (defun bash-completion-from-eshell ()
+    (add-hook 'completion-at-point-functions
+              'bash-completion-eshell-capf 0 t))
   :hook
-  (shell-dynamic-complete-functions . bash-completion-dynamic-complete))
+  (shell-dynamic-complete-functions . bash-completion-dynamic-complete)
+  (eshell-mode-hook . bash-completion-from-eshell))
 
 (use-package savehist
   :config
   (savehist-mode))
 
 (use-package which-key
-    :config
-    (which-key-mode))
+  :config
+  (which-key-mode))
 
 (use-package menu-bar
   :config
@@ -139,8 +156,9 @@
   :init
   (setq imenu-auto-rescan t)
   :bind
-  (:map prog-mode-map
-        ("C-c i" . imenu)))
+  (nil
+   :map prog-mode-map
+   ("C-c i" . imenu)))
 
 (use-package compile
   :bind
@@ -203,30 +221,34 @@
 
 (use-package flyspell
   :bind
-  (:map flyspell-mode-map
-        ("C-." . nil)
-        ("C-M-i" . nil))
+  (nil
+   :map flyspell-mode-map
+   ("C-." . nil)
+   ("C-M-i" . nil))
   :hook
   ((text-mode-hook . flyspell-mode)
    (prog-mode-hook . flyspell-prog-mode)))
 
 (use-package flymake
   :bind
-  (:map flymake-mode-map
-        ("C-c e n" . flymake-goto-next-error)
-        ("C-c e p" . flymake-goto-prev-error)
-        ("C-c e l" . flymake-show-diagnostics-buffer))
+  (nil
+   :map flymake-mode-map
+   ("C-c e n" . flymake-goto-next-error)
+   ("C-c e p" . flymake-goto-prev-error)
+   ("C-c e l" . flymake-show-diagnostics-buffer))
   :hook
   (prog-mode-hook . flymake-mode))
 
-(defun xdg-open () (interactive)
-       (call-process "xdg-open" nil 0 nil
-                     (dired-get-filename nil t)))
+(defun xdg-open ()
+  (interactive)
+  (call-process "xdg-open" nil 0 nil
+                (dired-get-filename nil t)))
 
 (use-package dired
   :bind
-  (:map dired-mode-map
-        ("C-c o" . xdg-open)))
+  (nil
+   :map dired-mode-map
+   ("C-c o" . xdg-open)))
 
 (use-package eldoc
   :config
@@ -253,15 +275,17 @@
   :init
   (setq eglot-confirm-server-initiated-edits nil)
   :bind
-  (:map eglot-mode-map
-        ("C-c r" . eglot-rename)
-        ("C-c f" . eglot-format)
-        ("C-c a" . eglot-code-actions))
+  (nil
+   :map eglot-mode-map
+   ("C-c r" . eglot-rename)
+   ("C-c f" . eglot-format)
+   ("C-c a" . eglot-code-actions))
   :config
   (add-to-list 'eglot-server-programs
                '(cmake-mode . ("cmake-language-server")))
   (add-to-list 'eglot-server-programs
-               '(java-mode . (lambda () (interactive)
+               '(java-mode . (lambda ()
+                               (interactive)
                                (let ((workspace
                                       (expand-file-name
                                        (md5 (project-root (project-current)))
@@ -319,10 +343,12 @@
   :config
   (add-to-list 'TeX-view-program-selection '(output-pdf "xdg-open"))
   :bind
-  (:map TeX-mode-map
-        ("C-c c" . (lambda () (interactive)
-                     (save-buffer)
-                     (TeX-command-run-all nil))))
+  (nil
+   :map TeX-mode-map
+   ("C-c c" . (lambda ()
+                (interactive)
+                (save-buffer)
+                (TeX-command-run-all nil))))
   :hook
   (LaTeX-mode-hook . (lambda ()
                        (turn-on-reftex)

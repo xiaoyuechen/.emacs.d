@@ -39,8 +39,11 @@
 (add-to-list 'default-frame-alist
              '(font . "Source Code Pro-16"))
 
+(defun set-kbd-repeat-rate ()
+  (call-process "xset" nil nil nil "r" "rate" "200" "60"))
+
 (call-process "xsetroot" nil nil nil "-cursor_name" "left_ptr")
-(call-process "xset" nil nil nil "r" "rate" "200" "60")
+(set-kbd-repeat-rate)
 (call-process "picom" nil nil nil "-b")
 (start-process "xscreensaver" nil "xscreensaver" "--no-splash")
 (start-process "nm-applet" nil "nm-applet")
@@ -63,7 +66,40 @@
   :config
   (display-battery-mode))
 
+(use-package desktop-environment
+  :demand
+  :init
+  (setq desktop-environment-screenlock-command "xscreensaver-command --lock")
+  :bind
+  (nil
+   :map desktop-environment-mode-map
+   ("<XF86KbdBrightnessUp>" . desktop-environment-keyboard-backlight-increment)
+   ("<XF86KbdBrightnessDown>" . desktop-environment-keyboard-backlight-decrement))
+  :config
+  (desktop-environment-mode))
+
+(use-package exwm-config
+  :config
+  (exwm-config-ido))
+
+(use-package exwm-systemtray
+  :config
+  (exwm-systemtray-enable))
+
+(use-package exwm-randr
+  :demand
+  :init
+  (setq exwm-randr-workspace-monitor-plist
+        '(0 "eDP-1-1"))
+  :config
+  (exwm-randr-enable)
+  :hook
+  (exwm-randr-screen-change-hook . set-kbd-repeat-rate))
+
+
 (use-package exwm
+  :after (desktop-environment exwm-config exwm-systemtray exwm-randr)
+  :demand
   :init
   (setq exwm-workspace-number 4)
   (setq exwm-input-global-keys
@@ -99,49 +135,29 @@
           ([?\M-w] . [?\C-c])
           ([?\C-y] . [?\C-v])
           ([?\C-s] . [?\C-f])))
-
   :config
-  (use-package exwm-config
-    :config
-    (exwm-config-ido))
+  (defun exwm-update-buffer-name ()
+    (exwm-workspace-rename-buffer
+     (concat exwm-class-name " — "
+             (truncate-string-to-width
+              (or exwm-title "") 25 nil nil t))))
+  (exwm-enable)
+  :bind
+  (nil
+   :map exwm-mode-map
+   ("C-q" . exwm-input-send-next-key))
+  :hook
+  (exwm-update-class-hook . exwm-update-buffer-name)
+  (exwm-update-title-hook . exwm-update-buffer-name))
 
-  (use-package exwm-systemtray
-    :config
-    (exwm-systemtray-enable))
 
-  (use-package exwm-randr
-    :init
-    (setq exwm-randr-workspace-monitor-plist
-          '(0 "eDP-1-1"))
-    :config
-    (exwm-randr-enable))
-
-  (use-package desktop-environment
-    :init
-    (setq desktop-environment-screenlock-command "xscreensaver-command -lock")
-    :config
-    (define-key desktop-environment-mode-map
-      (kbd "<XF86KbdBrightnessUp>")
-      'desktop-environment-keyboard-backlight-increment)
-    (define-key desktop-environment-mode-map
-      (kbd "<XF86KbdBrightnessDown>")
-      'desktop-environment-keyboard-backlight-decrement)
-    (desktop-environment-mode))
-
-  (define-key exwm-mode-map [?\C-q] 'exwm-input-send-next-key)
-
-  (add-hook 'exwm-update-class-hook
-            (lambda ()
-              (exwm-workspace-rename-buffer exwm-class-name)))
-
-  (exwm-enable))
-
-(defun ednc-buffer () (interactive)
-       (switch-to-buffer ednc-log-name))
 
 (use-package ednc
   :demand
   :config
+  (defun ednc-buffer ()
+    (interactive)
+    (switch-to-buffer ednc-log-name))
   (defun list-notifications ()
     (mapconcat 'ednc-format-notification (ednc-notifications) ""))
   (nconc global-mode-string '((:eval (list-notifications))))
