@@ -59,13 +59,6 @@
   :config
   (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t))
 
-(use-package gnus
-  :defer
-  :config
-  (setq gnus-select-method
-        '(nnimap "mail.uu.se"
-                 (nnimap-stream ssl))))
-
 (use-package mu4e-alert
   :config
   (setq mu4e-alert-email-notification-types '(count))
