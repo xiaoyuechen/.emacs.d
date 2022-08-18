@@ -29,29 +29,39 @@
 (setq custom-file "~/.emacs.d/custom.el")
 (load custom-file)
 
-(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+(use-package use-package
+  :config
+  (setq use-package-hook-name-suffix nil))
 
-(setq use-package-hook-name-suffix nil)
-(setq x-underline-at-descent-line t)
-(setq enable-recursive-minibuffers t)
-(setq read-file-name-completion-ignore-case t
-      read-buffer-completion-ignore-case t
-      completion-ignore-case t)
-(setq sentence-end-double-space nil)
-(setq require-final-newline t)
-(setq-default indent-tabs-mode nil)
-(setq delete-by-moving-to-trash t)
-(setq async-shell-command-buffer 'new-buffer)
+(add-to-list 'command-switch-alist
+             '("--denv" . (lambda (_) (load "~/.emacs.d/denv.el"))))
 
-(put 'narrow-to-region 'disabled nil)
-(put 'narrow-to-page 'disabled nil)
-(put 'dired-find-alternate-file 'disabled nil)
-(put 'upcase-region 'disabled nil)
-(put 'downcase-region 'disabled nil)
+(use-package emacs
+  :config
+  (setq x-underline-at-descent-line t)
+  (setq enable-recursive-minibuffers t)
+  (setq read-file-name-completion-ignore-case t
+        read-buffer-completion-ignore-case t
+        completion-ignore-case t)
+  (setq sentence-end-double-space nil)
+  (setq require-final-newline t)
+  (setq-default indent-tabs-mode nil)
+  (setq delete-by-moving-to-trash t)
+  (setq async-shell-command-buffer 'new-buffer)
+
+  (put 'narrow-to-region 'disabled nil)
+  (put 'narrow-to-page 'disabled nil)
+  (put 'dired-find-alternate-file 'disabled nil)
+  (put 'upcase-region 'disabled nil)
+  (put 'downcase-region 'disabled nil))
+
+(use-package package
+  :config
+  (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t))
 
 (use-package gnus
   :defer
-  :init
+  :config
   (setq gnus-select-method
         '(nnimap "mail.uu.se"
                  (nnimap-stream ssl))))
@@ -64,6 +74,8 @@
   (after-init-hook . mu4e-alert-enable-notifications))
 
 (use-package mml-sec
+  :hook
+  (mu4e-compose-mode-hook . sign-mail)
   :init
   (setq mml-default-sign-method "smime"
         mml-default-encrypt-method "smime"
@@ -75,9 +87,7 @@
       (when name
         (cond
          ((equal name "uu")
-          (mml-secure-sign))))))
-  :hook
-  (mu4e-compose-mode-hook . sign-mail))
+          (mml-secure-sign)))))))
 
 (use-package mu4e
   :demand
@@ -85,10 +95,9 @@
   (("C-c m" . mu4e))
   :hook
   (dired-mode-hook . turn-on-gnus-dired-mode)
-  :init
+  :config
   (setq mail-user-agent 'mu4e-user-agent)
   (setq read-mail-command 'mu4e)
-  :config
   (setq mu4e-headers-fields '((:human-date . 10)
                               (:flags . 4)
                               (:mailing-list . 10)
@@ -150,35 +159,42 @@
   (mu4e t))
 
 (use-package auth-source
-  :init
+  :config
   (setq auth-sources '("secrets:default")))
 
 (use-package desktop
-  :init
-  (setq desktop-restore-frames nil)
   :config
+  (setq desktop-restore-frames nil)
   (desktop-save-mode))
 
 (use-package doom-modeline
   :config
   (doom-modeline-mode))
 
-(use-package eshell
+(use-package esh-module
   :defer
   :config
-  (use-package esh-module
-    :config
-    (add-to-list 'eshell-modules-list 'eshell-tramp))
-  (use-package em-term
-    :init
-    (setq eshell-destroy-buffer-when-process-dies t)
-    :config
-    (dolist (command '("vim" "vifm" "nmtui" "alsamixer"))
-      (add-to-list 'eshell-visual-commands command))
-    (dolist (subcommand '(("aur" "sync")))
-      (add-to-list 'eshell-visual-subcommands subcommand))))
+  (dolist (module '(eshell-tramp eshell-smart))
+    (add-to-list 'eshell-modules-list module)))
+
+(use-package em-term
+  :defer
+  :config
+  (setq eshell-destroy-buffer-when-process-dies nil)
+  (dolist (command '("vim" "vifm" "nmtui" "alsamixer"))
+    (add-to-list 'eshell-visual-commands command))
+  (dolist (subcommand '(("aur" "sync")))
+    (add-to-list 'eshell-visual-subcommands subcommand)))
+
+(use-package em-smart
+  :defer
+  :config
+  (setq eshell-review-quick-commands 'not-even-short-output))
 
 (use-package bash-completion
+  :hook
+  (shell-dynamic-complete-functions . bash-completion-dynamic-complete)
+  (eshell-mode-hook . bash-completion-from-eshell)
   :config
   (defun bash-completion-eshell-capf ()
     (append (bash-completion-dynamic-complete-nocomint
@@ -188,10 +204,7 @@
 
   (defun bash-completion-from-eshell ()
     (add-hook 'completion-at-point-functions
-              'bash-completion-eshell-capf 0 t))
-  :hook
-  (shell-dynamic-complete-functions . bash-completion-dynamic-complete)
-  (eshell-mode-hook . bash-completion-from-eshell))
+              'bash-completion-eshell-capf 0 t)))
 
 (use-package savehist
   :config
@@ -214,10 +227,9 @@
   (scroll-bar-mode -1))
 
 (use-package ido
-  :init
+  :config
   (setq ido-use-filename-at-point 'guess)
   (setq ido-use-url-at-point t)
-  :config
   (ido-mode))
 
 (use-package simple
@@ -231,12 +243,12 @@
                     (with-current-buffer shell-command-buffer-name-async
                       (rename-buffer output-buffer t))))))
   :hook
-  (before-save-hook . delete-trailing-whitespace))
+  (before-save-hook . delete-trailing-whitespace)
+  (text-mode-hook . auto-fill-mode))
 
 (use-package paren
-  :init
-  (setq show-paren-delay 0)
   :config
+  (setq show-paren-delay 0)
   (show-paren-mode))
 
 (use-package elec-pair
@@ -249,7 +261,7 @@
 
 (use-package locate
   :bind
-  (("C-c F" . locate)))
+  (("C-c f" . locate)))
 
 (use-package recentf
   :init
@@ -267,7 +279,7 @@
   (("C-x C-b" . ibuffer)))
 
 (use-package imenu
-  :init
+  :config
   (setq imenu-auto-rescan t)
   :bind
   (nil
@@ -279,13 +291,14 @@
   (("C-c c" . compile)))
 
 (use-package mwheel
-  :init
+  :config
   (setq mouse-wheel-scroll-amount '(1 ((shift) . 1))
         mouse-wheel-progressive-speed nil
         mouse-wheel-follow-mouse 't))
 
 (use-package gdb-mi
-  :init
+  :defer
+  :config
   (setq gdb-many-windows t))
 
 (use-package autorevert
@@ -293,7 +306,8 @@
   (global-auto-revert-mode))
 
 (use-package comint
-  :init
+  :defer
+  :config
   (setq comint-prompt-read-only t
         comint-buffer-maximum-size 20000))
 
@@ -319,9 +333,8 @@
   (file-file-hook . elide-head))
 
 (use-package org
-  :init
-  (setq org-adapt-indentation t)
   :config
+  (setq org-adapt-indentation t)
   (use-package oc-biblatex)
   (org-babel-do-load-languages
    'org-babel-load-languages
@@ -330,6 +343,7 @@
   (("C-c l" . org-store-link)))
 
 (use-package tramp
+  :defer
   :config
   (add-to-list 'tramp-remote-path 'tramp-own-remote-path))
 
@@ -371,7 +385,8 @@
   (eldoc-add-command 'c-electric-paren))
 
 (use-package company
-  :init
+  :defer
+  :config
   (setq company-minimum-prefix-length 3
         company-idle-delay 0.0)
   :hook
@@ -379,7 +394,7 @@
   (latex-mode-hook . company-mode))
 
 (use-package yasnippet
-  :defer t
+  :defer
   :config
   (yas-reload-all))
 
@@ -388,8 +403,6 @@
   (prog-mode-hook . hs-minor-mode))
 
 (use-package eglot
-  :init
-  (setq eglot-confirm-server-initiated-edits nil)
   :bind
   (nil
    :map eglot-mode-map
@@ -397,6 +410,7 @@
    ("C-c f" . eglot-format)
    ("C-c a" . eglot-code-actions))
   :config
+  (setq eglot-confirm-server-initiated-edits nil)
   (add-to-list 'eglot-server-programs
                '(cmake-mode . ("cmake-language-server")))
   (add-to-list 'eglot-server-programs
@@ -410,10 +424,6 @@
   :hook
   ((c-mode-hook c++-mode-hook java-mode-hook python-mode-hook haskell-mode-hook)
    . eglot-ensure))
-
-(use-package text-mode
-  :config
-  (auto-fill-mode))
 
 (use-package cc-mode
   :config
@@ -473,8 +483,5 @@
                        (prettify-symbols-mode)
                        (TeX-fold-mode)
                        (TeX-source-correlate-mode))))
-
-(add-to-list 'command-switch-alist
-             '("--denv" . (lambda (_) (load "~/.emacs.d/denv.el"))))
 
 ;;; init.el ends here
