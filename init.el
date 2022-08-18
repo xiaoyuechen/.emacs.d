@@ -49,6 +49,110 @@
 (put 'upcase-region 'disabled nil)
 (put 'downcase-region 'disabled nil)
 
+(use-package gnus
+  :defer
+  :init
+  (setq gnus-select-method
+        '(nnimap "mail.uu.se"
+                 (nnimap-stream ssl))))
+
+(use-package mu4e-alert
+  :config
+  (setq mu4e-alert-email-notification-types '(count))
+  (mu4e-alert-set-default-style 'notifications)
+  :hook
+  (after-init-hook . mu4e-alert-enable-notifications))
+
+(use-package mml-sec
+  :init
+  (setq mml-default-sign-method "smime"
+        mml-default-encrypt-method "smime"
+        mml-secure-smime-sign-with-sender t)
+  :config
+  (defun sign-mail ()
+    (let* ((ctx (mu4e-context-current))
+           (name (if ctx (mu4e-context-name ctx))))
+      (when name
+        (cond
+         ((equal name "uu")
+          (mml-secure-sign))))))
+  :hook
+  (mu4e-compose-mode-hook . sign-mail))
+
+(use-package mu4e
+  :demand
+  :bind
+  (("C-c m" . mu4e))
+  :hook
+  (dired-mode-hook . turn-on-gnus-dired-mode)
+  :init
+  (setq mail-user-agent 'mu4e-user-agent)
+  (setq read-mail-command 'mu4e)
+  :config
+  (setq mu4e-headers-fields '((:human-date . 10)
+                              (:flags . 4)
+                              (:mailing-list . 10)
+                              (:from-or-to . 22)
+                              (:thread-subject)))
+  (setq mu4e-get-mail-command "mbsync -a")
+  (setq mu4e-update-interval 30)
+  (setq mu4e-hide-index-messages t)
+  (setq mu4e-change-filenames-when-moving t)
+  (setq message-send-mail-function 'smtpmail-send-it)
+  (setq message-kill-buffer-on-exit t)
+  (setq mu4e-context-policy 'pick-first)
+  (setq mu4e-compose-dont-reply-to-self t)
+  (setq mu4e-attachment-dir "~/Downloads")
+  (setq mu4e-maildir-shortcuts
+        '((:maildir "/uu/Inbox" :key ?u)
+          (:maildir "/outlook/Inbox" :key ?i)))
+  (setq mu4e-contexts
+        `(,(make-mu4e-context
+            :name "uu"
+            :match-func
+            (lambda (msg)
+              (when msg
+                (string-match-p "^/uu"
+                                (mu4e-message-field msg :maildir))))
+            :vars
+            '((user-mail-address . "xiaoyue.chen@it.uu.se")
+              (mu4e-sent-folder . "/uu/Sent Items")
+              (mu4e-drafts-folder . "/uu/Drafts")
+              (mu4e-trash-folder . "/uu/Deleted Items")
+              (mu4e-refile-folder . "/uu/Archive")
+              (mu4e-sent-messages-behavior . sent)
+              (smtpmail-smtp-server . "mail.uu.se")
+              (smtpmail-smtp-service . 587)
+              (smtpmail-stream-type . starttls)
+              (mu4e-compose-signature
+               . (concat "Xiaoyue Chen, PhD Student\n"
+                         "Division of Computer Systems\n"
+                         "Department of Information Technology\n"
+                         "Uppsala University"))))
+          ,(make-mu4e-context
+            :name "outlook"
+            :match-func
+            (lambda (msg)
+              (when msg
+                (string-match-p "^/outlook"
+                                (mu4e-message-field msg :maildir))))
+            :vars
+            '((user-mail-address . "xiaoyue_chen@outlook.com")
+              (mu4e-sent-folder . "/outlook/Sent")
+              (mu4e-drafts-folder . "/outlook/Drafts")
+              (mu4e-trash-folder . "/outlook/Deleted")
+              (mu4e-refile-folder . "/outlook/Archive")
+              (mu4e-sent-messages-behavior . delete)
+              (smtpmail-smtp-server . "smtp-mail.outlook.com")
+              (smtpmail-smtp-service . 587)
+              (smtpmail-stream-type . starttls)
+              (mu4e-compose-signature . t)))))
+  (mu4e t))
+
+(use-package auth-source
+  :init
+  (setq auth-sources '("secrets:default")))
+
 (use-package desktop
   :init
   (setq desktop-restore-frames nil)
@@ -69,8 +173,10 @@
     :init
     (setq eshell-destroy-buffer-when-process-dies t)
     :config
-    (dolist (command '("vim" "nmtui" "alsamixer"))
-      (add-to-list 'eshell-visual-commands command))))
+    (dolist (command '("vim" "vifm" "nmtui" "alsamixer"))
+      (add-to-list 'eshell-visual-commands command))
+    (dolist (subcommand '(("aur" "sync")))
+      (add-to-list 'eshell-visual-subcommands subcommand))))
 
 (use-package bash-completion
   :config
@@ -256,7 +362,9 @@
   :bind
   (nil
    :map dired-mode-map
-   ("C-c o" . xdg-open-from-dired)))
+   ("C-c o" . xdg-open-from-dired))
+  :hook
+  (dired-mode-hook . turn-on-gnus-dired-mode))
 
 (use-package eldoc
   :config

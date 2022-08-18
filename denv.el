@@ -23,21 +23,7 @@
 
 ;;; Code:
 
-(with-temp-buffer
-  (call-process "xrandr" nil t nil)
-  (goto-char (point-min))
-  (when (re-search-forward
-         "\n[^ ]+ connected\\(?: .*\\)? \\([[:digit:]]+\\)x\\([[:digit:]]+\\)"
-         nil t)
-    (let ((resx (string-to-number (match-string 1)))
-          (resy (string-to-number (match-string 2))))
-      (when (and (<= 3840 resx)
-                 (<= 2160 resy))
-        (setenv "GDK_SCALE" "2")
-        (setenv "QT_SCALE_FACTOR" "2")))))
-
-(add-to-list 'default-frame-alist
-             '(font . "Source Code Pro-16"))
+(set-face-attribute 'default nil :height 160)
 
 (defun set-kbd-repeat-rate ()
   (call-process "xset" nil nil nil "r" "rate" "200" "60"))
@@ -156,9 +142,19 @@
   (defun ednc-buffer ()
     (interactive)
     (switch-to-buffer ednc-log-name))
+
   (defun list-notifications ()
     (mapconcat 'ednc-format-notification (ednc-notifications) ""))
-  (nconc global-mode-string '((:eval (list-notifications))))
+
+  (defun stack-notifications (&optional hide)
+    (mapconcat (lambda (notification)
+                 (let ((app-name (ednc-notification-app-name notification)))
+                   (unless (member app-name hide)
+                     (push app-name hide)
+                     (ednc-format-notification notification))))
+               (ednc-notifications) ""))
+
+  (nconc global-mode-string '((:eval (stack-notifications))))
   (add-hook 'ednc-notification-presentation-functions
             (lambda (&rest _) (force-mode-line-update t)))
   (ednc-mode)
