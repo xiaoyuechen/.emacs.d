@@ -31,8 +31,9 @@
 (call-process "xsetroot" nil nil nil "-cursor_name" "left_ptr")
 (set-kbd-repeat-rate)
 (call-process "picom" nil nil nil "-b")
-(start-process "xscreensaver" nil "xscreensaver" "--no-splash")
-(start-process "nm-applet" nil "nm-applet")
+(call-process "xscreensaver" nil 0 nil "--no-splash")
+(call-process "nm-applet" nil 0 nil)
+(call-process "fcitx5" nil 0 nil "-d")
 
 (setenv "VISUAL" "emacsclient")
 (setenv "EDITOR" (getenv "VISUAL"))
@@ -76,7 +77,7 @@
   (exwm-randr-enable)
   :init
   (setq exwm-randr-workspace-monitor-plist
-        '(0 "eDP-1-1"))
+        '(0 "eDP-1-1" 9 "DP-0"))
   :hook
   (exwm-randr-screen-change-hook . set-kbd-repeat-rate))
 
@@ -94,7 +95,7 @@
                     (number-sequence 0 9))
           ([?\s-&] . (lambda (command)
         	       (interactive (list (read-shell-command "$ ")))
-        	       (start-process-shell-command command nil command)))
+                       (start-process-shell-command command nil command)))
           ([?\s-b] . switch-to-buffer)
           ([?\s-o] . other-window)))
   (setq exwm-input-simulation-keys
@@ -123,6 +124,8 @@
      (concat exwm-class-name ": "
              (truncate-string-to-width
               (or exwm-title "") 25 nil nil t))))
+  (defun exwm-cd-home ()
+    (setq-local default-directory "~/"))
   (desktop-environment-mode)
   (exwm-config-ido)
   (exwm-systemtray-enable)
@@ -134,7 +137,8 @@
    ("C-q" . exwm-input-send-next-key))
   :hook
   (exwm-update-class-hook . exwm-update-buffer-name)
-  (exwm-update-title-hook . exwm-update-buffer-name))
+  (exwm-update-title-hook . exwm-update-buffer-name)
+  (exwm-manage-finish-hook . exwm-cd-home))
 
 (use-package ednc
   :demand

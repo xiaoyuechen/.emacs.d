@@ -55,6 +55,49 @@
   (put 'upcase-region 'disabled nil)
   (put 'downcase-region 'disabled nil))
 
+(use-package diary
+  :defer
+  :init
+  (setq diary-file "~/Org/diary"))
+
+(use-package engine-mode
+  :config
+  (defengine duckduckgo
+    "https://duckduckgo.com/?q=%s"
+    :keybinding "d")
+  (defengine github
+    "https://github.com/search?ref=simplesearch&q=%s"
+    :keybinding "g")
+  (defengine google-maps
+    "http://maps.google.com/maps?q=%s"
+    :keybinding "m")
+  (defengine stack-overflow
+    "https://stackoverflow.com/search?q=%s"
+    :keybinding "s")
+  (defengine wikipedia
+    "http://www.wikipedia.org/search-redirect.php?language=en&go=Go&search=%s"
+    :keybinding "w")
+  (defengine wiktionary
+    (concat "https://www.wikipedia.org/search-redirect.php?"
+            "family=wiktionary&language=en&go=Go&search=%s")
+    :keybinding "t")
+  (engine-mode))
+
+(use-package calendar
+  :defer
+  :config
+  (setq calendar-week-start-day 1
+        calendar-intermonth-text
+        '(propertize
+          (format "%2d"
+                  (car
+                   (calendar-iso-from-absolute
+                    (calendar-absolute-from-gregorian (list month day year)))))
+          'font-lock-face 'font-lock-warning-face)
+        calendar-intermonth-header
+        (propertize "Wk"
+                    'font-lock-face 'font-lock-keyword-face)))
+
 (use-package package
   :config
   (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t))
@@ -64,7 +107,7 @@
   (setq mu4e-alert-email-notification-types '(count))
   (mu4e-alert-set-default-style 'notifications)
   :hook
-  (after-init-hook . mu4e-alert-enable-notifications))
+  (after-init-hook . mu4e-alert-enable-mode-line-display))
 
 (use-package mml-sec
   :hook
@@ -85,13 +128,16 @@
 (use-package mu4e
   :demand
   :bind
-  (("C-c m" . mu4e))
+  (("C-c m" . mu4e)
+   :map mu4e-main-mode-map
+   ("q" . bury-buffer))
   :hook
   (dired-mode-hook . turn-on-gnus-dired-mode)
   :config
   (setq mail-user-agent 'mu4e-user-agent)
+  (setq gnus-dired-mail-mode 'mu4e-user-agent)
   (setq read-mail-command 'mu4e)
-  (setq mu4e-headers-fields '((:human-date . 10)
+  (setq mu4e-headers-fields '((:human-date . 11)
                               (:flags . 4)
                               (:mailing-list . 10)
                               (:from-or-to . 22)
@@ -105,6 +151,7 @@
   (setq mu4e-context-policy 'pick-first)
   (setq mu4e-compose-dont-reply-to-self t)
   (setq mu4e-attachment-dir "~/Downloads")
+  (setq mu4e-headers-date-format "%F")
   (setq mu4e-maildir-shortcuts
         '((:maildir "/uu/Inbox" :key ?u)
           (:maildir "/outlook/Inbox" :key ?i)))
@@ -174,7 +221,7 @@
   :defer
   :config
   (setq eshell-destroy-buffer-when-process-dies nil)
-  (dolist (command '("vim" "vifm" "nmtui" "alsamixer"))
+  (dolist (command '("vim" "vifm" "nmtui" "alsamixer" "gh"))
     (add-to-list 'eshell-visual-commands command))
   (dolist (subcommand '(("aur" "sync")))
     (add-to-list 'eshell-visual-subcommands subcommand)))
@@ -183,6 +230,18 @@
   :defer
   :config
   (setq eshell-review-quick-commands 'not-even-short-output))
+
+(use-package eshell
+  :hook
+  (eshell-mode-hook . rename-eshell-buffer)
+  (eshell-directory-change-hook . rename-eshell-buffer)
+  :config
+  (defun rename-eshell-buffer ()
+    (rename-buffer (concat "*eshell: "
+                           (abbreviate-file-name (directory-file-name
+                                                  default-directory))
+                           "*")
+                   t)))
 
 (use-package bash-completion
   :hook
@@ -228,6 +287,7 @@
 (use-package simple
   :demand
   :config
+  (setq set-mark-command-repeat-pop t)
   (advice-add 'async-shell-command :after
               (lambda (command &optional output-buffer error-buffer)
                 (unless output-buffer
@@ -254,7 +314,7 @@
 
 (use-package locate
   :bind
-  (("C-c f" . locate)))
+  (("C-c F" . locate)))
 
 (use-package recentf
   :init
@@ -326,14 +386,40 @@
   (file-file-hook . elide-head))
 
 (use-package org
+  :hook
+  (mu4e-compose-mode-hook . turn-on-orgtbl)
   :config
+  (setq org-directory "~/Org")
+  (setq org-default-notes-file (expand-file-name "notes.org" org-directory))
+  (setq org-agenda-files (expand-file-name "agenda-file-list" org-directory))
   (setq org-adapt-indentation t)
+  (setq org-log-done 'time)
+  (setq org-catch-invisible-edits 'smart)
+  (setq org-agenda-include-diary t)
   (use-package oc-biblatex)
+  (setq org-tag-persistent-alist
+        '(("research" . ?i) ("study" . ?s) ("teaching" . ?t) ("hobby" . ?h)
+          ("programming" . ?p) ("writing" . ?w) ("reading" . ?r) ("meeting" . ?m)
+          ("errand" . ?e)))
+  (setq org-fast-tag-selection-single-key 'expert)
   (org-babel-do-load-languages
    'org-babel-load-languages
-   '((shell . t)))
+   (mapcar (lambda (language)
+             `(,language . t))
+           '(shell haskell C python)))
+
+  (defun push-org-agenda-files ()
+    (interactive)
+    (org-save-all-org-buffers)
+    (let ((buffer (get-buffer-create "*rclone*")))
+      (with-current-buffer buffer
+        (display-buffer buffer)
+        (dolist (file (org-agenda-files))
+          (call-process "rclone" nil t t "sync" "-v" file "comintern:")))))
   :bind
-  (("C-c l" . org-store-link)))
+  (("C-c l" . org-store-link)
+   ("C-c a" . org-agenda)
+   ("C-c p" . org-capture)))
 
 (use-package tramp
   :defer
@@ -401,7 +487,7 @@
    :map eglot-mode-map
    ("C-c r" . eglot-rename)
    ("C-c f" . eglot-format)
-   ("C-c a" . eglot-code-actions))
+   ("C-c e a" . eglot-code-actions))
   :config
   (setq eglot-confirm-server-initiated-edits nil)
   (add-to-list 'eglot-server-programs
@@ -423,6 +509,18 @@
   (dolist (map '(c-mode-map c++-mode-map))
     (bind-key "C-c o" 'ff-find-other-file map)
     (bind-key "C-c d" 'disaster map))
+  (c-add-style "m5"
+	       '((c-basic-offset . 4)
+                 (indent-tabs-mode . nil)
+	         (c-offsets-alist . ((substatement-open . 0)
+				     (inline-open . 0)
+				     (block-open . -4)
+				     (case-label . 2)
+				     (label . 2)
+				     (statement-case-intro . 2)
+				     (statement-case-open . 2)
+				     (access-label . -2)
+				     (innamespace . 0)))))
   :hook
   (c-mode-common-hook . (lambda ()
                           (setq-default fill-column 80)
