@@ -47,13 +47,53 @@
   (setq require-final-newline t)
   (setq-default indent-tabs-mode nil)
   (setq delete-by-moving-to-trash t)
-  (setq async-shell-command-buffer 'new-buffer)
+  (setq async-shell-command-buffer 'new-buffer))
 
-  (put 'narrow-to-region 'disabled nil)
-  (put 'narrow-to-page 'disabled nil)
-  (put 'dired-find-alternate-file 'disabled nil)
-  (put 'upcase-region 'disabled nil)
-  (put 'downcase-region 'disabled nil))
+;; TODO: Package this!
+(setq ical2d-urls "~/Org/ical-list")
+
+(defun ical2d-pull ()
+  (interactive)
+  (with-temp-buffer
+    (insert-file-contents ical2d-urls)
+    (let ((urls (split-string
+                 (buffer-substring-no-properties
+                  (point-min) (point-max))
+                 nil
+                 t)))
+      (delete-file diary-file)
+      (dolist (url urls)
+        (icalendar-import-file
+           (url-file-local-copy url)
+           diary-file)))))
+
+;; (defun ical2d-add-to-main-diary (main-diary ical2d-diary)
+;;   (let ((include (format "#include \"%s\"" ical2d-diary)))
+;;     (with-current-buffer (find-file-noselect main-diary)
+;;       (goto-char (point-min))
+;;       (unless (search-forward include nil t))
+;;       (goto-char (point-min))
+;;       (insert (format "%s\n" include))
+;;       (save-buffer))))
+
+;; (defun ical2d-pull ()
+;;   (interactive)
+;;   (with-temp-buffer
+;;     (insert-file-contents ical2d-urls)
+;;     (let ((urls (split-string
+;;                  (buffer-substring-no-properties
+;;                   (point-min) (point-max))
+;;                  nil
+;;                  t)))
+;;       (dolist (url urls)
+;;         (let ((ical2d-diary
+;;                (expand-file-name (concat (md5 url) ".diary")
+;;                                  (file-name-directory ical2d-urls))))
+;;           (ical2d-add-to-main-diary diary-file ical2d-diary)
+;;           (delete-file ical2d-diary)
+;;           (icalendar-import-file
+;;            (url-file-local-copy url)
+;;            ical2d-diary))))))
 
 (use-package diary
   :defer
@@ -205,6 +245,7 @@
 (use-package desktop
   :config
   (setq desktop-restore-frames nil)
+  (setq desktop-load-locked-desktop t)
   (desktop-save-mode))
 
 (use-package doom-modeline
@@ -424,6 +465,13 @@
 (use-package tramp
   :defer
   :config
+  (setq backup-enable-predicate
+        (lambda (name)
+          (and (normal-backup-enable-predicate name)
+               (not
+                (let ((method (file-remote-p name 'method)))
+                  (when (stringp method)
+                    (member method '("su" "sudo"))))))))
   (add-to-list 'tramp-remote-path 'tramp-own-remote-path))
 
 (use-package flyspell
@@ -500,9 +548,10 @@
                                        (md5 (project-root (project-current)))
                                        "/tmp")))
                                  (list "jdtls" "-data" workspace)))))
-  :hook
-  ((c-mode-hook c++-mode-hook java-mode-hook python-mode-hook haskell-mode-hook)
-   . eglot-ensure))
+  ;; :hook
+  ;; ((c-mode-hook c++-mode-hook java-mode-hook python-mode-hook haskell-mode-hook)
+  ;;  . eglot-ensure)
+  )
 
 (use-package cc-mode
   :config
@@ -523,7 +572,7 @@
 				     (innamespace . 0)))))
   :hook
   (c-mode-common-hook . (lambda ()
-                          (setq-default fill-column 80)
+                          (setq-local fill-column 80)
                           (c-toggle-electric-state 1)
                           (c-toggle-comment-style 1)))
   (minizinc-mode-hook . (lambda ()
@@ -575,4 +624,15 @@
                        (TeX-fold-mode)
                        (TeX-source-correlate-mode))))
 
+(use-package vc
+  :defer
+  :init
+  (setq vc-follow-symlinks t))
+
 ;;; init.el ends here
+(put 'narrow-to-region 'disabled nil)
+(put 'narrow-to-page 'disabled nil)
+(put 'dired-find-alternate-file 'disabled nil)
+(put 'upcase-region 'disabled nil)
+(put 'downcase-region 'disabled nil)
+(put 'magit-clean 'disabled nil)
