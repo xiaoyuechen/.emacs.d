@@ -66,10 +66,6 @@
    ("<XF86KbdBrightnessDown>"
     . desktop-environment-keyboard-backlight-decrement)))
 
-(use-package exwm-config
-  :commands
-  (exwm-config-ido))
-
 (use-package exwm-systemtray
   :commands
   (exwm-systemtray-enable))
@@ -132,7 +128,6 @@
     (setq-local default-directory "~/"))
 
   (desktop-environment-mode)
-  (exwm-config-ido)
   (exwm-systemtray-enable)
   (exwm-randr-enable)
   (exwm-enable)

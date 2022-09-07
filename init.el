@@ -449,6 +449,26 @@
    :map dired-mode-map
    ("C-c C-x a" . org-attach-dired-to-subtree)))
 
+(use-package org-roam
+  :defer
+  :config
+  (setq org-roam-directory "~/Life/org")
+  (org-roam-db-autosync-mode)
+  :bind
+  ("C-c r i" . org-roam-node-insert)
+  ("C-c r f" . org-roam-node-find)
+  ("C-c r p" . org-roam-capture))
+
+(use-package selectrum
+  :config
+  (selectrum-mode)
+  (selectrum-prescient-mode)
+  (prescient-persist-mode))
+
+(use-package ffap
+  :config
+  (ffap-bindings))
+
 (use-package tramp
   :defer
   :config
@@ -520,9 +540,9 @@
   :bind
   (nil
    :map eglot-mode-map
-   ("C-c r" . eglot-rename)
-   ("C-c f" . eglot-format)
-   ("C-c e a" . eglot-code-actions))
+   ("C-c s r" . eglot-rename)
+   ("C-c s f" . eglot-format)
+   ("C-c s a" . eglot-code-actions))
   :config
   (setq eglot-confirm-server-initiated-edits nil)
   (add-to-list 'eglot-server-programs
