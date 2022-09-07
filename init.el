@@ -49,57 +49,6 @@
   (setq delete-by-moving-to-trash t)
   (setq async-shell-command-buffer 'new-buffer))
 
-;; TODO: Package this!
-(setq ical2d-urls "~/Org/ical-list")
-
-(defun ical2d-pull ()
-  (interactive)
-  (with-temp-buffer
-    (insert-file-contents ical2d-urls)
-    (let ((urls (split-string
-                 (buffer-substring-no-properties
-                  (point-min) (point-max))
-                 nil
-                 t)))
-      (delete-file diary-file)
-      (dolist (url urls)
-        (icalendar-import-file
-           (url-file-local-copy url)
-           diary-file)))))
-
-;; (defun ical2d-add-to-main-diary (main-diary ical2d-diary)
-;;   (let ((include (format "#include \"%s\"" ical2d-diary)))
-;;     (with-current-buffer (find-file-noselect main-diary)
-;;       (goto-char (point-min))
-;;       (unless (search-forward include nil t))
-;;       (goto-char (point-min))
-;;       (insert (format "%s\n" include))
-;;       (save-buffer))))
-
-;; (defun ical2d-pull ()
-;;   (interactive)
-;;   (with-temp-buffer
-;;     (insert-file-contents ical2d-urls)
-;;     (let ((urls (split-string
-;;                  (buffer-substring-no-properties
-;;                   (point-min) (point-max))
-;;                  nil
-;;                  t)))
-;;       (dolist (url urls)
-;;         (let ((ical2d-diary
-;;                (expand-file-name (concat (md5 url) ".diary")
-;;                                  (file-name-directory ical2d-urls))))
-;;           (ical2d-add-to-main-diary diary-file ical2d-diary)
-;;           (delete-file ical2d-diary)
-;;           (icalendar-import-file
-;;            (url-file-local-copy url)
-;;            ical2d-diary))))))
-
-(use-package diary
-  :defer
-  :init
-  (setq diary-file "~/Org/diary"))
-
 (use-package engine-mode
   :config
   (defengine duckduckgo
@@ -242,15 +191,20 @@
   :config
   (setq auth-sources '("secrets:default")))
 
+(use-package ediff
+  :defer
+  :config
+  (setq ediff-window-setup-function 'ediff-setup-windows-plain))
+
 (use-package desktop
   :config
   (setq desktop-restore-frames nil)
   (setq desktop-load-locked-desktop t)
   (desktop-save-mode))
 
-(use-package doom-modeline
+(use-package mood-line
   :config
-  (doom-modeline-mode))
+  (mood-line-mode))
 
 (use-package esh-module
   :defer
@@ -277,6 +231,7 @@
   (eshell-mode-hook . rename-eshell-buffer)
   (eshell-directory-change-hook . rename-eshell-buffer)
   :config
+  (setq eshell-history-size 1000)
   (defun rename-eshell-buffer ()
     (rename-buffer (concat "*eshell: "
                            (abbreviate-file-name (directory-file-name
@@ -298,6 +253,18 @@
   (defun bash-completion-from-eshell ()
     (add-hook 'completion-at-point-functions
               'bash-completion-eshell-capf 0 t)))
+
+(defun bash-completion-eshell-capf ()
+  (append (bash-completion-dynamic-complete-nocomint
+           (save-excursion (eshell-bol) (point))
+           (point) t)
+          '(:exclusive no)))
+
+(defun bash-completion-from-eshell ()
+  (add-hook 'completion-at-point-functions
+            'bash-completion-eshell-capf 0 t))
+
+(add-hook 'eshell-mode-hook 'bash-completion-from-eshell)
 
 (use-package savehist
   :config
@@ -430,37 +397,57 @@
   :hook
   (mu4e-compose-mode-hook . turn-on-orgtbl)
   :config
-  (setq org-directory "~/Org")
+  (setq org-directory "~/Life/org")
   (setq org-default-notes-file (expand-file-name "notes.org" org-directory))
-  (setq org-agenda-files (expand-file-name "agenda-file-list" org-directory))
-  (setq org-adapt-indentation t)
+  (setq org-agenda-files "~/Life/agenda-file-list")
+  (setq org-startup-indented t)
   (setq org-log-done 'time)
   (setq org-catch-invisible-edits 'smart)
-  (setq org-agenda-include-diary t)
-  (use-package oc-biblatex)
+  (setq org-attach-store-link-p 'attached)
+  (setq org-attach-dir-relative t)
   (setq org-tag-persistent-alist
-        '(("research" . ?i) ("study" . ?s) ("teaching" . ?t) ("hobby" . ?h)
-          ("programming" . ?p) ("writing" . ?w) ("reading" . ?r) ("meeting" . ?m)
+        '(("research" . ?i)
+          ("study" . ?s)
+          ("teaching" . ?t)
+          ("hobby" . ?h)
+          ("programming" . ?p)
+          ("writing" . ?w)
+          ("reading" . ?r)
+          ("meeting" . ?m)
           ("errand" . ?e)))
+  (setq org-capture-templates
+        (mapcar
+         (lambda (config)
+           (let* ((key (car (car config)))
+                  (name (cdr (car config)))
+                  (file (expand-file-name (concat name "s.org") org-directory))
+                  (extra (cdr config)))
+             (append
+              (list key name 'entry
+                    `(file ,file)
+                    `(file ,(expand-file-name name "~/Life/templates"))
+                    :empty-lines 1)
+              extra)))
+         '((("t" . "task"))
+           (("b" . "idea"))
+           (("v" . "review") :jump-to-captured t))))
   (setq org-fast-tag-selection-single-key 'expert)
   (org-babel-do-load-languages
    'org-babel-load-languages
    (mapcar (lambda (language)
              `(,language . t))
            '(shell haskell C python)))
+  (use-package oc-biblatex)
+  (use-package ox-reveal
+    :config
+    (setq org-reveal-root "https://cdn.jsdelivr.net/npm/reveal.js"))
 
-  (defun push-org-agenda-files ()
-    (interactive)
-    (org-save-all-org-buffers)
-    (let ((buffer (get-buffer-create "*rclone*")))
-      (with-current-buffer buffer
-        (display-buffer buffer)
-        (dolist (file (org-agenda-files))
-          (call-process "rclone" nil t t "sync" "-v" file "comintern:")))))
   :bind
   (("C-c l" . org-store-link)
    ("C-c a" . org-agenda)
-   ("C-c p" . org-capture)))
+   ("C-c p" . org-capture)
+   :map dired-mode-map
+   ("C-c C-x a" . org-attach-dired-to-subtree)))
 
 (use-package tramp
   :defer
