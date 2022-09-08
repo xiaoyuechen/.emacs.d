@@ -397,14 +397,15 @@
   :hook
   (mu4e-compose-mode-hook . turn-on-orgtbl)
   :config
-  (setq org-directory "~/Life/org")
-  (setq org-default-notes-file (expand-file-name "notes.org" org-directory))
-  (setq org-agenda-files "~/Life/agenda-file-list")
+  (setq org-directory "~/Org")
+  (setq org-default-notes-file (expand-file-name "notes/notes.org" org-directory))
+  (setq org-agenda-files (expand-file-name "agenda-file-list" org-directory))
   (setq org-startup-indented t)
   (setq org-log-done 'time)
   (setq org-catch-invisible-edits 'smart)
   (setq org-attach-store-link-p 'attached)
   (setq org-attach-dir-relative t)
+  (setq org-goto-interface 'outline-path-completion)
   (setq org-tag-persistent-alist
         '(("research" . ?i)
           ("study" . ?s)
@@ -418,14 +419,16 @@
   (setq org-capture-templates
         (mapcar
          (lambda (config)
-           (let* ((key (car (car config)))
-                  (name (cdr (car config)))
+           (let* ((key (caar config))
+                  (name (cdar config))
                   (file (expand-file-name (concat name "s.org") org-directory))
                   (extra (cdr config)))
              (append
               (list key name 'entry
                     `(file ,file)
-                    `(file ,(expand-file-name name "~/Life/templates"))
+                    `(file ,(expand-file-name
+                             name
+                             (expand-file-name "templates" org-directory)))
                     :empty-lines 1)
               extra)))
          '((("t" . "task"))
@@ -452,7 +455,7 @@
 (use-package org-roam
   :defer
   :config
-  (setq org-roam-directory "~/Life/org")
+  (setq org-roam-directory (expand-file-name "roam" org-directory))
   (org-roam-db-autosync-mode)
   :bind
   ("C-c r i" . org-roam-node-insert)
