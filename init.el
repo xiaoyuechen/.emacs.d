@@ -398,7 +398,8 @@
   (mu4e-compose-mode-hook . turn-on-orgtbl)
   :config
   (setq org-directory "~/Org")
-  (setq org-default-notes-file (expand-file-name "notes/notes.org" org-directory))
+  (setq org-notes-directory (expand-file-name "notes" org-directory))
+  (setq org-default-notes-file (expand-file-name "notes" org-notes-directory))
   (setq org-agenda-files (expand-file-name "agenda-file-list" org-directory))
   (setq org-startup-indented t)
   (setq org-log-done 'time)
@@ -421,7 +422,8 @@
          (lambda (config)
            (let* ((key (caar config))
                   (name (cdar config))
-                  (file (expand-file-name (concat name "s.org") org-directory))
+                  (file (expand-file-name (concat name "s.org")
+                                          org-notes-directory))
                   (extra (cdr config)))
              (append
               (list key name 'entry
