@@ -314,10 +314,6 @@
   :config
   (delete-selection-mode))
 
-(use-package locate
-  :bind
-  (("C-c F" . locate)))
-
 (use-package ibuffer
   :config
   (add-hook 'ibuffer-mode-hook 'ibuffer-auto-mode)
