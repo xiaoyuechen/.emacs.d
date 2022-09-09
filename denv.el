@@ -29,13 +29,13 @@
   (call-process "xset" nil nil nil "r" "rate" "200" "60"))
 
 (defun call-autostart-processes ()
-  (call-process "xsetroot" nil nil nil "-cursor_name" "left_ptr")
   (set-kbd-repeat-rate)
+  (call-process "xsetroot" nil nil nil "-cursor_name" "left_ptr")
   (call-process "picom" nil nil nil "-b")
   (call-process "xscreensaver" nil 0 nil "--no-splash")
-  (call-process "nm-applet" nil 0 nil)
-  (call-process "fcitx5" nil 0 nil "-d")
-  (call-process "nextcloud" nil 0 nil "--background"))
+  (call-process "nextcloud" nil 0 nil "--background")
+  (call-process "signal-desktop" nil 0 nil "--start-in-tray")
+  (call-process "telegram-desktop" nil 0 nil "-startintray"))
 
 (setenv "VISUAL" "emacsclient")
 (setenv "EDITOR" (getenv "VISUAL"))
@@ -68,7 +68,9 @@
 
 (use-package exwm-systemtray
   :commands
-  (exwm-systemtray-enable))
+  (exwm-systemtray-enable)
+  :config
+  (setq exwm-systemtray-icon-gap 4))
 
 (use-package exwm-randr
   :commands
@@ -78,6 +80,10 @@
         '(0 "eDP-1-1" 9 "DP-0"))
   :hook
   (exwm-randr-screen-change-hook . set-kbd-repeat-rate))
+
+(use-package exwm-xim
+  :commands
+  (exwm-xim-enable))
 
 (use-package exwm
   :demand
@@ -94,7 +100,8 @@
           ([?\s-&] . (lambda (command)
         	       (interactive (list (let ((default-directory "~"))
                                             (read-shell-command "$ "))))
-                       (let ((default-directory "~"))
+                       (let ((default-directory "~")
+                             (process-connection-type nil))
                          (start-process-shell-command command nil command))))
           ([?\s-b] . switch-to-buffer)
           ([?\s-o] . other-window)))
@@ -130,18 +137,22 @@
   (desktop-environment-mode)
   (exwm-systemtray-enable)
   (exwm-randr-enable)
+  (exwm-xim-enable)
+  (push ?\C-\\ exwm-input-prefix-keys)
+  (add-hook 'exwm-init-hook
+            (lambda ()
+              (switch-to-buffer "*scratch*")
+              (exwm-workspace-switch 1)
+              (org-agenda nil "n")
+              (delete-other-windows)
+              (call-autostart-processes))
+            100)
   (exwm-enable)
   :bind
   (nil
    :map exwm-mode-map
    ("C-q" . exwm-input-send-next-key))
   :hook
-  (exwm-init-hook . (lambda ()
-                      (switch-to-buffer "*scratch*")
-                      (exwm-workspace-switch 1)
-                      (call-autostart-processes)
-                      (org-agenda nil "n")
-                      (delete-other-windows)))
   (exwm-update-class-hook . exwm-update-buffer-name)
   (exwm-update-title-hook . exwm-update-buffer-name)
   (exwm-manage-finish-hook . exwm-cd-home))
@@ -170,5 +181,15 @@
   (ednc-mode)
   :bind
   (("C-c n" . ednc-buffer)))
+
+(use-package pyim
+  :defer
+  :init
+  (setq default-input-method "pyim")
+  :config
+  (setq pyim-cloudim 'google)
+  (pyim-basedict-enable)
+  (pyim-default-scheme 'quanpin))
+
 
 ;;; desktop.el ends here

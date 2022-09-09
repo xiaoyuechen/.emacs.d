@@ -286,12 +286,6 @@
   :config
   (scroll-bar-mode -1))
 
-(use-package ido
-  :config
-  (setq ido-use-filename-at-point 'guess)
-  (setq ido-use-url-at-point t)
-  (ido-mode))
-
 (use-package simple
   :demand
   :config
@@ -323,15 +317,6 @@
 (use-package locate
   :bind
   (("C-c F" . locate)))
-
-(use-package recentf
-  :init
-  (setq recentf-max-saved-items 1000)
-  (setq recentf-menu-filter 'recentf-arrange-by-dir)
-  (setq recentf-auto-cleanup nil)
-  (recentf-mode)
-  :bind
-  (("C-c h" . recentf-open-files)))
 
 (use-package ibuffer
   :config
@@ -442,10 +427,8 @@
    (mapcar (lambda (language)
              `(,language . t))
            '(shell haskell C python)))
-  (use-package oc-biblatex)
-  (use-package ox-reveal
-    :config
-    (setq org-reveal-root "https://cdn.jsdelivr.net/npm/reveal.js"))
+  (dolist (module '(org-id org-attach oc-biblatex ox-reveal))
+   (add-to-list 'org-modules module))
 
   :bind
   (("C-c l" . org-store-link)
@@ -454,10 +437,21 @@
    :map dired-mode-map
    ("C-c C-x a" . org-attach-dired-to-subtree)))
 
+(use-package ox-reveal
+  :defer
+  :config
+  (setq org-reveal-root "https://cdn.jsdelivr.net/npm/reveal.js"))
+
 (use-package org-roam
   :defer
   :config
   (setq org-roam-directory (expand-file-name "roam" org-directory))
+  (setq org-roam-node-display-template
+        (concat "${title:*} "
+                (propertize "${tags:10}" 'face 'org-tag)))
+  (setq org-roam-db-node-include-function
+        (lambda ()
+          (not (member "ATTACH" (org-get-tags)))))
   (org-roam-db-autosync-mode)
   :bind
   ("C-c r i" . org-roam-node-insert)
