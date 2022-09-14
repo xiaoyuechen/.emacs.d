@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if [ "$XDG_SESSION_DESKTOP" = emacs ]; then
+if [ $(echo "$XDG_SESSION_DESKTOP" | tr [:upper:] [:lower:]) = emacs ]; then
     autorandr --change &> /dev/null
     ~/.emacs.d/misc/resolution.el
     if [ $? = 1 ]; then
@@ -8,5 +8,4 @@ if [ "$XDG_SESSION_DESKTOP" = emacs ]; then
         export QT_SCALE_FACTOR=2
     fi
     export _JAVA_AWT_WM_NONREPARENTING=1
-    export _JAVA_OPTIONS="-Dawt.useSystemAAFontSettings=on -Dswing.aatext=true"
 fi

@@ -47,7 +47,8 @@
   (setq require-final-newline t)
   (setq-default indent-tabs-mode nil)
   (setq delete-by-moving-to-trash t)
-  (setq async-shell-command-buffer 'new-buffer))
+  (setq async-shell-command-buffer 'new-buffer)
+  (setq backup-by-copying-when-linked t))
 
 (use-package engine-mode
   :config
@@ -297,9 +298,13 @@
                          (concat "*CMD " command "*")))
                     (with-current-buffer shell-command-buffer-name-async
                       (rename-buffer output-buffer t))))))
+  (setq visual-line-fringe-indicators '(left-curly-arrow right-arrow))
   :hook
-  (before-save-hook . delete-trailing-whitespace)
-  (text-mode-hook . auto-fill-mode))
+  (before-save-hook . delete-trailing-whitespace))
+
+(use-package visual-fill-column
+  :hook
+  (visual-line-mode-hook . visual-fill-column-mode))
 
 (use-package paren
   :config
@@ -353,6 +358,8 @@
   (setq comint-prompt-read-only t
         comint-buffer-maximum-size 20000))
 
+(use-package lice)
+
 (use-package autoinsert
   :init
   (let ((insert-lice (lambda () (lice lice:default-license)
@@ -376,12 +383,26 @@
 
 (use-package org
   :hook
+  (org-mode-hook . (lambda ()
+                     (setq-local fill-column 80)
+                     (visual-line-mode)))
   (mu4e-compose-mode-hook . turn-on-orgtbl)
-  :config
+
+  :init
   (setq org-directory "~/Org")
   (setq org-notes-directory (expand-file-name "notes" org-directory))
+  (setq org-template-directory (expand-file-name "templates" org-directory))
   (setq org-default-notes-file (expand-file-name "notes" org-notes-directory))
   (setq org-agenda-files (expand-file-name "agenda-file-list" org-directory))
+  (defun org-template-arg (name)
+    (when name
+      `(file ,(expand-file-name name org-template-directory))))
+
+  :config
+  (setq org-refile-targets '((org-agenda-files . (:maxlevel . 2))))
+  (setq org-clock-out-remove-zero-time-clocks t)
+  (setq org-refile-use-outline-path 'file)
+  (setq org-outline-path-complete-in-steps nil)
   (setq org-startup-indented t)
   (setq org-log-done 'time)
   (setq org-catch-invisible-edits 'smart)
@@ -401,22 +422,21 @@
   (setq org-capture-templates
         (mapcar
          (lambda (config)
-           (let* ((key (caar config))
-                  (name (cdar config))
-                  (file (expand-file-name (concat name "s.org")
-                                          org-notes-directory))
-                  (extra (cdr config)))
-             (append
-              (list key name 'entry
-                    `(file ,file)
-                    `(file ,(expand-file-name
-                             name
-                             (expand-file-name "templates" org-directory)))
-                    :empty-lines 1)
-              extra)))
-         '((("t" . "task"))
-           (("b" . "idea"))
-           (("v" . "review") :jump-to-captured t))))
+           `(,(plist-get config 'key)
+             ,(plist-get config 'description)
+             entry
+             (file ,(expand-file-name (plist-get config 'file)
+                                      org-notes-directory))
+             ,(org-template-arg (plist-get config 'template))
+             :empty-lines 1))
+         '(( key "t"
+             description "Task"
+             file "tasks.org"
+             template "task")
+           ( key "f"
+             description "Fleeting note"
+             file "notes.org"
+             template "note"))))
   (setq org-fast-tag-selection-single-key 'expert)
   (org-babel-do-load-languages
    'org-babel-load-languages
@@ -424,11 +444,13 @@
              `(,language . t))
            '(shell haskell C python)))
   (dolist (module '(org-id org-attach oc-biblatex ox-reveal))
-   (add-to-list 'org-modules module))
+    (add-to-list 'org-modules module))
 
   :bind
   (("C-c l" . org-store-link)
-   ("C-c a" . org-agenda)
+   ("C-c a" . (lambda ()
+                (interactive)
+                (org-agenda nil "n")))
    ("C-c p" . org-capture)
    :map dired-mode-map
    ("C-c C-x a" . org-attach-dired-to-subtree)))
@@ -440,19 +462,49 @@
 
 (use-package org-roam
   :defer
-  :config
+  :init
   (setq org-roam-directory (expand-file-name "roam" org-directory))
+  :config
   (setq org-roam-node-display-template
-        (concat "${title:*} "
-                (propertize "${tags:10}" 'face 'org-tag)))
+        (concat "${title:64} "
+                (propertize "${tags}" 'face 'org-tag)))
   (setq org-roam-db-node-include-function
         (lambda ()
           (not (member "ATTACH" (org-get-tags)))))
+  (setq org-roam-capture-templates
+        (mapcar
+         (lambda (config)
+           `(,(plist-get config 'key)
+             ,(plist-get config 'description)
+             plain
+             ,(org-template-arg (plist-get config 'template))
+             :target
+             (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
+                        ,(format "#+title: ${title}\n#+filetags: :%s:\n"
+                                 (mapconcat 'identity
+                                            (plist-get config 'tags)
+                                            ":")))
+             :unnarrowed t
+             :empty-lines 1))
+         `(( key "l"
+             description "Literature note"
+             template "literature"
+             tags ("literature"))
+           ( key "c"
+             description "Permanent note"
+             template nil
+             tags ("permanent"))
+           ( key "e"
+             description "Entry point"
+             template nil
+             tags ("entry")))))
+
   (org-roam-db-autosync-mode)
   :bind
   ("C-c r i" . org-roam-node-insert)
   ("C-c r f" . org-roam-node-find)
-  ("C-c r p" . org-roam-capture))
+  ("C-c r p" . org-roam-capture)
+  ("C-c r b" . org-roam-buffer-toggle))
 
 (use-package selectrum
   :config
@@ -592,6 +644,25 @@
   :mode
   ("makefile" . makefile-gmake-mode))
 
+(use-package verilog-mode
+  :hook
+  (verilog-mode-hook
+   . (lambda ()
+       (setq-default compilation-error-regexp-alist
+                     (mapcar 'cdr verilog-error-regexp-emacs-alist))))
+  :config
+  (setq verilog-auto-newline nil)
+  (setq verilog-linter "verilator --lint-only -Wall"))
+
+(use-package haskell-mode
+  :bind
+  ( :map haskell-mode-map
+    ("C-c c" . haskell-compile)
+    ("C-c L" . haskell-process-load-file))
+  :config
+  (setq haskell-compile-command
+        "ghc -dynamic -Wall -ferror-spans -fforce-recomp -c %s"))
+
 (use-package langtool
   :init
   (setq langtool-java-classpath
@@ -620,7 +691,6 @@
   :hook
   (LaTeX-mode-hook . (lambda ()
                        (turn-on-reftex)
-                       (turn-on-auto-fill)
                        (LaTeX-math-mode)
                        (prettify-symbols-mode)
                        (TeX-fold-mode)
