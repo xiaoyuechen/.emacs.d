@@ -73,6 +73,10 @@
     :keybinding "t")
   (engine-mode))
 
+(use-package newcomment
+  :init
+  (setq comment-empty-lines t))
+
 (use-package calendar
   :defer
   :config
@@ -464,6 +468,7 @@
   :defer
   :init
   (setq org-roam-directory (expand-file-name "roam" org-directory))
+  (use-package org-roam-protocol)
   :config
   (setq org-roam-node-display-template
         (concat "${title:64} "

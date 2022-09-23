@@ -25,18 +25,15 @@
 
 (set-face-attribute 'default nil :height 160)
 
-(defun set-kbd-repeat-rate ()
-  (call-process-shell-command "xset r rate 200 60"))
-
 (defun call-autostart-processes ()
-  (set-kbd-repeat-rate)
   (call-process-shell-command "xsetroot -cursor_name left_ptr")
   (call-process-shell-command "picom -b")
   (call-process-shell-command "xscreensaver --no-splash" nil 0)
   (call-process-shell-command "nextcloud --background" nil 0)
-  (call-process-shell-command "signal-desktop" nil 0)
-  (call-process-shell-command "telegram-desktop" nil 0)
-  (sleep-for 5))
+  ;; (call-process-shell-command "signal-desktop" nil 0)
+  ;; (call-process-shell-command "telegram-desktop" nil 0)
+  ;; (sleep-for 5)
+  )
 
 (defun shutdown (reboot)
   (interactive "P")
@@ -87,9 +84,7 @@
   (exwm-randr-enable)
   :init
   (setq exwm-randr-workspace-monitor-plist
-        '(0 "eDP-1-1" 9 "DP-0"))
-  :hook
-  (exwm-randr-screen-change-hook . set-kbd-repeat-rate))
+        '(0 "eDP-1-1" 9 "DP-0")))
 
 (use-package exwm-xim
   :commands
@@ -134,7 +129,8 @@
           ([?\C-w] . [?\C-x])
           ([?\M-w] . [?\C-c])
           ([?\C-y] . [?\C-v])
-          ([?\C-s] . [?\C-f])))
+          ([?\C-s] . [?\C-f])
+          ([?\C-g] . [escape])))
   :config
   (defun exwm-update-buffer-name ()
     (exwm-workspace-rename-buffer
