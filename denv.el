@@ -29,11 +29,10 @@
   (call-process-shell-command "xsetroot -cursor_name left_ptr")
   (call-process-shell-command "picom -b")
   (call-process-shell-command "xscreensaver --no-splash" nil 0)
+  (call-process-shell-command "nm-applet" nil 0)
   (call-process-shell-command "nextcloud --background" nil 0)
-  ;; (call-process-shell-command "signal-desktop" nil 0)
-  ;; (call-process-shell-command "telegram-desktop" nil 0)
-  ;; (sleep-for 5)
-  )
+  (call-process-shell-command "signal-desktop" nil 0)
+  (call-process-shell-command "telegram-desktop" nil 0))
 
 (defun shutdown (reboot)
   (interactive "P")
@@ -140,6 +139,11 @@
   (defun exwm-cd-home ()
     (setq-local default-directory "~/"))
 
+  (defun exwm-workspace-move-irc-window ()
+    (when (member exwm-class-name
+                  '("Signal" "TelegramDesktop"))
+      (exwm-workspace-move-window 0)))
+
   (desktop-environment-mode)
   (exwm-systemtray-enable)
   (exwm-randr-enable)
@@ -161,7 +165,8 @@
   :hook
   (exwm-update-class-hook . exwm-update-buffer-name)
   (exwm-update-title-hook . exwm-update-buffer-name)
-  (exwm-manage-finish-hook . exwm-cd-home))
+  (exwm-manage-finish-hook . exwm-cd-home)
+  (exwm-manage-finish-hook . exwm-workspace-move-irc-window))
 
 (use-package ednc
   :demand
