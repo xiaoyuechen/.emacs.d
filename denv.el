@@ -31,10 +31,9 @@
   (call-process-shell-command "xscreensaver --no-splash" nil 0)
   (call-process-shell-command "nm-applet" nil 0)
   (call-process-shell-command "nextcloud --background" nil 0)
-  (call-process-shell-command "signal-desktop" nil 0)
-  (call-process-shell-command "telegram-desktop" nil 0))
+  (call-process-shell-command "signal-desktop" nil 0))
 
-(defun shutdown (reboot)
+(defun shutdown (&optional reboot)
   (interactive "P")
   (save-some-buffers)
   (run-hooks 'kill-emacs-query-functions)
@@ -140,8 +139,9 @@
     (setq-local default-directory "~/"))
 
   (defun exwm-workspace-move-irc-window ()
-    (when (member exwm-class-name
-                  '("Signal" "TelegramDesktop"))
+    (when (and exwm-class-name
+               (member exwm-class-name
+                       '("Signal")))
       (exwm-workspace-move-window 0)))
 
   (desktop-environment-mode)

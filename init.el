@@ -196,6 +196,10 @@
   :config
   (setq auth-sources '("secrets:default")))
 
+(use-package pyvenv
+  :config
+  (setq pyvenv-default-virtual-env-name ".pyenv"))
+
 (use-package ediff
   :defer
   :config
@@ -336,6 +340,11 @@
   (nil
    :map prog-mode-map
    ("C-c i" . imenu)))
+
+(use-package flimenu
+  :config
+  (setq flimenu-imenu-separator "/")
+  (flimenu-global-mode))
 
 (use-package compile
   :bind
@@ -588,6 +597,11 @@
   :hook
   (prog-mode-hook . hs-minor-mode))
 
+(use-package which-func
+  :init
+  (setq which-func-modes '(c-mode c++-mode))
+  (which-function-mode))
+
 (use-package eglot
   :bind
   (nil
@@ -596,7 +610,7 @@
    ("C-c s f" . eglot-format)
    ("C-c s a" . eglot-code-actions))
   :config
-  (setq eglot-confirm-server-initiated-edits nil)
+  ;; (setq eglot-confirm-server-initiated-edits 'confirm)
   (add-to-list 'eglot-server-programs
                '(cmake-mode . ("cmake-language-server")))
   (add-to-list 'eglot-server-programs
@@ -705,6 +719,9 @@
   :defer
   :init
   (setq vc-follow-symlinks t))
+
+(use-package forge
+  :after magit)
 
 ;;; init.el ends here
 (put 'narrow-to-region 'disabled nil)
