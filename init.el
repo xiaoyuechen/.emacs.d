@@ -198,7 +198,8 @@
 
 (use-package pyvenv
   :config
-  (setq pyvenv-default-virtual-env-name ".pyenv"))
+  (setq pyvenv-default-virtual-env-name ".pyenv")
+  (pyvenv-mode))
 
 (use-package ediff
   :defer
@@ -215,17 +216,22 @@
   :config
   (mood-line-mode))
 
+(use-package eshell-vterm
+  :init
+  (eshell-vterm-mode))
+
 (use-package esh-module
   :defer
   :config
-  (dolist (module '(eshell-tramp eshell-smart))
+  (dolist (module '(eshell-tramp ;; eshell-smart
+                    ))
     (add-to-list 'eshell-modules-list module)))
 
 (use-package em-term
   :defer
   :config
   (setq eshell-destroy-buffer-when-process-dies nil)
-  (dolist (command '("vim" "vifm" "nmtui" "alsamixer" "gh"))
+  (dolist (command '("vim" "vifm" "nmtui" "alsamixer" "gh" "pulsemixer"))
     (add-to-list 'eshell-visual-commands command))
   (dolist (subcommand '(("aur" "sync")))
     (add-to-list 'eshell-visual-subcommands subcommand)))
@@ -233,7 +239,8 @@
 (use-package em-smart
   :defer
   :config
-  (setq eshell-review-quick-commands 'not-even-short-output))
+  ;; (setq eshell-review-quick-commands 'not-even-short-output)
+  )
 
 (use-package eshell
   :hook
@@ -343,7 +350,6 @@
 
 (use-package flimenu
   :config
-  (setq flimenu-imenu-separator "/")
   (flimenu-global-mode))
 
 (use-package compile
@@ -397,7 +403,7 @@
 (use-package org
   :hook
   (org-mode-hook . (lambda ()
-                     (setq-local fill-column 80)
+                     (setq-local fill-column 79)
                      (visual-line-mode)))
   (mu4e-compose-mode-hook . turn-on-orgtbl)
 
@@ -539,7 +545,7 @@
                (not
                 (let ((method (file-remote-p name 'method)))
                   (when (stringp method)
-                    (member method '("su" "sudo"))))))))
+                    (member method '("su" "sudo" "ssh"))))))))
   (add-to-list 'tramp-remote-path 'tramp-own-remote-path))
 
 (use-package flyspell
@@ -558,9 +564,7 @@
    :map flymake-mode-map
    ("C-c e n" . flymake-goto-next-error)
    ("C-c e p" . flymake-goto-prev-error)
-   ("C-c e l" . flymake-show-diagnostics-buffer))
-  :hook
-  (prog-mode-hook . flymake-mode))
+   ("C-c e l" . flymake-show-diagnostics-buffer)))
 
 (use-package dired
   :config
@@ -590,6 +594,8 @@
 
 (use-package yasnippet
   :defer
+  :init
+  (add-hook 'prog-mode-hook 'yas-minor-mode)
   :config
   (yas-reload-all))
 
@@ -610,7 +616,7 @@
    ("C-c s f" . eglot-format)
    ("C-c s a" . eglot-code-actions))
   :config
-  ;; (setq eglot-confirm-server-initiated-edits 'confirm)
+  ;; (setq eglot-confirm-server-initiated-edits nil)
   (add-to-list 'eglot-server-programs
                '(cmake-mode . ("cmake-language-server")))
   (add-to-list 'eglot-server-programs
@@ -621,10 +627,14 @@
                                        (md5 (project-root (project-current)))
                                        "/tmp")))
                                  (list "jdtls" "-data" workspace)))))
-  ;; :hook
-  ;; ((c-mode-hook c++-mode-hook java-mode-hook python-mode-hook haskell-mode-hook)
-  ;;  . eglot-ensure)
-  )
+  :hook
+  (eglot-managed-mode-hook
+   . (lambda ()
+       (add-to-list 'company-backends
+                    '(company-capf :with company-yasnippet))))
+;; ((c-mode-hook c++-mode-hook java-mode-hook python-mode-hook haskell-mode-hook)
+;;  . eglot-ensure)
+)
 
 (use-package cc-mode
   :config
@@ -676,11 +686,12 @@
 (use-package haskell-mode
   :bind
   ( :map haskell-mode-map
-    ("C-c c" . haskell-compile)
-    ("C-c L" . haskell-process-load-file))
+    ("C-c C" . haskell-compile)
+    ("C-c L" . haskell-process-load-file)
+    ("C-c H" . haskell-hoogle))
   :config
   (setq haskell-compile-command
-        "ghc -dynamic -Wall -ferror-spans -fforce-recomp -c %s"))
+        "ghc -dynamic -Wall -ferror-spans -fforce-recomp %s"))
 
 (use-package langtool
   :init

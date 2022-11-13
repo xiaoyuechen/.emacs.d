@@ -28,10 +28,13 @@
 (defun call-autostart-processes ()
   (call-process-shell-command "xsetroot -cursor_name left_ptr")
   (call-process-shell-command "picom -b")
+  (call-process-shell-command "ibus-daemon -drxR")
   (call-process-shell-command "xscreensaver --no-splash" nil 0)
   (call-process-shell-command "nm-applet" nil 0)
   (call-process-shell-command "nextcloud --background" nil 0)
-  (call-process-shell-command "signal-desktop" nil 0))
+  (call-process-shell-command "signal-desktop" nil 0)
+  (call-process-shell-command "skypeforlinux" nil 0)
+  (call-process-shell-command "telegram-desktop" nil 0))
 
 (defun shutdown (&optional reboot)
   (interactive "P")
@@ -141,14 +144,14 @@
   (defun exwm-workspace-move-irc-window ()
     (when (and exwm-class-name
                (member exwm-class-name
-                       '("Signal")))
+                       '("Signal" "Skype" "TelegramDesktop")))
       (exwm-workspace-move-window 0)))
 
   (desktop-environment-mode)
   (exwm-systemtray-enable)
   (exwm-randr-enable)
-  (exwm-xim-enable)
-  (push ?\C-\\ exwm-input-prefix-keys)
+  ;; (exwm-xim-enable)
+  ;; (push ?\C-\\ exwm-input-prefix-keys)
   (add-hook 'exwm-init-hook
             (lambda ()
               (call-autostart-processes)
@@ -166,6 +169,8 @@
   (exwm-update-class-hook . exwm-update-buffer-name)
   (exwm-update-title-hook . exwm-update-buffer-name)
   (exwm-manage-finish-hook . exwm-cd-home)
+  (exwm-update-class-hook . exwm-workspace-move-irc-window)
+  (exwm-update-title-hook . exwm-workspace-move-irc-window)
   (exwm-manage-finish-hook . exwm-workspace-move-irc-window))
 
 (use-package ednc
