@@ -1,11 +1,20 @@
 #!/bin/sh
 
-if [ $(echo "$XDG_SESSION_DESKTOP" | tr [:upper:] [:lower:]) = emacs ]; then
-    autorandr --change &> /dev/null
-    ~/.emacs.d/misc/resolution.el
-    if [ $? = 1 ]; then
-        export GDK_SCALE=2
-        export QT_SCALE_FACTOR=2
-    fi
+if [ $XDG_SESSION_DESKTOP = Emacs ] || [ $XDG_SESSION_DESKTOP = Xmonad ]; then
+    autorandr --force --change
+
     export _JAVA_AWT_WM_NONREPARENTING=1
+
+    xsetroot -cursor_name left_ptr
+    picom -b
+    xscreensaver --no-splash &
+
+    if [ $XDG_SESSION_DESKTOP = Xmonad ]; then
+        status-notifier-watcher &
+        keyd-application-mapper -d
+        systemctl --user start wallpaper.service
+        systemctl --user start wallpaper@15.timer
+    fi
+
+    fcitx5 -d
 fi
