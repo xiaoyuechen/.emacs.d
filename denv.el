@@ -25,17 +25,6 @@
 
 (set-face-attribute 'default nil :height 160)
 
-(defun call-autostart-processes ()
-  (call-process-shell-command "xsetroot -cursor_name left_ptr")
-  (call-process-shell-command "picom -b")
-  (call-process-shell-command "ibus-daemon -drxR")
-  (call-process-shell-command "xscreensaver --no-splash" nil 0)
-  (call-process-shell-command "nm-applet" nil 0)
-  (call-process-shell-command "nextcloud --background" nil 0)
-  (call-process-shell-command "signal-desktop" nil 0)
-  (call-process-shell-command "skypeforlinux" nil 0)
-  (call-process-shell-command "telegram-desktop" nil 0))
-
 (defun shutdown (&optional reboot)
   (interactive "P")
   (save-some-buffers)
@@ -72,7 +61,15 @@
    ("<XF86KbdBrightnessUp>"
     . desktop-environment-keyboard-backlight-increment)
    ("<XF86KbdBrightnessDown>"
-    . desktop-environment-keyboard-backlight-decrement)))
+    . desktop-environment-keyboard-backlight-decrement)
+   ("<XF86Launch4>"
+    . (lambda ()
+        (interactive)
+        (message (desktop-environment--shell-command-to-string "fanboostctl --next"))))
+   ("s-p"
+    . (lambda ()
+        (interactive)
+        (message (desktop-environment--shell-command-to-string "autorandr --cycle"))))))
 
 (use-package exwm-systemtray
   :commands
@@ -85,11 +82,7 @@
   (exwm-randr-enable)
   :init
   (setq exwm-randr-workspace-monitor-plist
-        '(0 "eDP-1-1" 9 "DP-0")))
-
-(use-package exwm-xim
-  :commands
-  (exwm-xim-enable))
+        '(0 "HDMI-0")))
 
 (use-package exwm
   :demand
@@ -110,7 +103,10 @@
                              (command (read-shell-command "$ ")))
                          (start-process-shell-command command nil command))))
           ([?\s-b] . switch-to-buffer)
-          ([?\s-o] . other-window)))
+          ([?\s-j] . other-window)
+          ([?\s-k] . (lambda ()
+                       (interactive)
+                       (other-window -1)))))
   (setq exwm-input-simulation-keys
         '(([?\C-b] . [left])
           ([?\M-b] . [C-left])
@@ -141,25 +137,15 @@
   (defun exwm-cd-home ()
     (setq-local default-directory "~/"))
 
-  (defun exwm-workspace-move-irc-window ()
-    (when (and exwm-class-name
-               (member exwm-class-name
-                       '("Signal" "Skype" "TelegramDesktop")))
-      (exwm-workspace-move-window 0)))
-
   (desktop-environment-mode)
   (exwm-systemtray-enable)
   (exwm-randr-enable)
-  ;; (exwm-xim-enable)
-  ;; (push ?\C-\\ exwm-input-prefix-keys)
   (add-hook 'exwm-init-hook
             (lambda ()
-              (call-autostart-processes)
-              (exwm-workspace-switch 1)
-              (org-agenda nil "n")
-              (delete-other-windows)
-              (org-agenda-redo-all))
+              (run-at-time nil 1 (lambda ()
+                                   (exwm-systemtray--refresh))))
             100)
+
   (exwm-enable)
   :bind
   (nil
@@ -168,10 +154,7 @@
   :hook
   (exwm-update-class-hook . exwm-update-buffer-name)
   (exwm-update-title-hook . exwm-update-buffer-name)
-  (exwm-manage-finish-hook . exwm-cd-home)
-  (exwm-update-class-hook . exwm-workspace-move-irc-window)
-  (exwm-update-title-hook . exwm-workspace-move-irc-window)
-  (exwm-manage-finish-hook . exwm-workspace-move-irc-window))
+  (exwm-manage-finish-hook . exwm-cd-home))
 
 (use-package ednc
   :demand
@@ -197,15 +180,6 @@
   (ednc-mode)
   :bind
   (("C-c n" . ednc-buffer)))
-
-(use-package pyim
-  :defer
-  :init
-  (setq default-input-method "pyim")
-  :config
-  (setq pyim-cloudim 'google)
-  (pyim-basedict-enable)
-  (pyim-default-scheme 'quanpin))
 
 
 ;;; desktop.el ends here

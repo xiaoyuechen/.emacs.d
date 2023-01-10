@@ -3,8 +3,9 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(mml-secure-openpgp-sign-with-sender t)
  '(package-selected-packages
-   '(eshell-vterm vterm flimenu forge visual-fill-column pyim-basedict pyim selectrum-prescient selectrum org-roam mood-line htmlize ox-reveal trashed crdt pyvenv engine-mode mu4e-alert use-package desktop-environment ednc exwm langtool geiser-guile cdlatex lice license-templates org yaml-mode bash-completion haskell-mode opencl-mode disaster gitignore-mode markdown-mode auctex eglot minizinc-mode magit cmake-mode yasnippet-snippets yasnippet which-key company))
+   '(kind-icon with-editor bash-completion magit pcmpl-args corfu marginalia eglot consult orderless vertico erlang ghub project yasnippet-snippets yasnippet flymake-racket geiser-racket racket-mode org-roam-ui eshell-vterm vterm visual-fill-column org-roam mood-line ox-reveal trashed crdt pyvenv engine-mode mu4e-alert use-package desktop-environment ednc exwm geiser-guile cdlatex lice license-templates org yaml-mode haskell-mode gitignore-mode markdown-mode auctex minizinc-mode cmake-mode which-key))
  '(safe-local-variable-values '((c-indentation-style . "m5")))
  '(warning-suppress-types '((use-package))))
 (custom-set-faces

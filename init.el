@@ -1,6 +1,6 @@
 ;;; init.el --- My personal Emacs init file          -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2022  Xiaoyue Chen
+;; Copyright (C) 2022, 2023  Xiaoyue Chen
 
 ;; Author: Xiaoyue Chen <xiaoyue.chen@it.uu.se>
 
@@ -29,28 +29,117 @@
 (setq custom-file "~/.emacs.d/custom.el")
 (load custom-file)
 
-(use-package use-package
-  :config
-  (setq use-package-hook-name-suffix nil))
+(setq use-package-hook-name-suffix nil)
+(setq use-package-enable-imenu-support t)
 
 (add-to-list 'command-switch-alist
              '("--denv" . (lambda (_) (load "~/.emacs.d/denv.el"))))
 
 (use-package emacs
+  :demand
   :config
   (setq x-underline-at-descent-line t)
+  (setq max-mini-window-height 0.6)
   (setq enable-recursive-minibuffers t)
-  (setq read-file-name-completion-ignore-case t
-        read-buffer-completion-ignore-case t
-        completion-ignore-case t)
   (setq sentence-end-double-space nil)
   (setq require-final-newline t)
   (setq-default indent-tabs-mode nil)
+  (setq tab-always-indent 'complete)
   (setq delete-by-moving-to-trash t)
   (setq async-shell-command-buffer 'new-buffer)
-  (setq backup-by-copying-when-linked t))
+  (setq backup-by-copying-when-linked t)
+  (setq minibuffer-prompt-properties
+        '(read-only t cursor-intangible t face minibuffer-prompt))
+  (add-hook 'minibuffer-setup-hook 'cursor-intangible-mode))
+
+(use-package consult
+  :bind
+  (;; C-c bindings (mode-specific-map)
+   ("C-c h" . consult-history)
+   ("C-c x" . consult-mode-command)
+   ("C-c k" . consult-kmacro)
+
+   ;; C-x bindings (ctl-x-map)
+   ("C-x M-:" . consult-complex-command)     ;; orig. repeat-complex-command
+   ("C-x b" . consult-buffer)                ;; orig. switch-to-buffer
+   ("C-x 4 b" . consult-buffer-other-window) ;; orig. switch-to-buffer-other-window
+   ("C-x 5 b" . consult-buffer-other-frame)  ;; orig. switch-to-buffer-other-frame
+   ("C-x r b" . consult-bookmark)            ;; orig. bookmark-jump
+   ("C-x p b" . consult-project-buffer)      ;; orig. project-switch-to-buffer
+
+   ;; Custom M-# bindings for fast register access
+   ("M-#" . consult-register-load)
+   ("M-'" . consult-register-store)          ;; orig. abbrev-prefix-mark (unrelated)
+   ("C-M-#" . consult-register)
+
+   ;; Other custom bindings
+   ("M-y" . consult-yank-pop)                ;; orig. yank-pop
+
+   ;; M-g bindings (goto-map)
+   ("M-g e" . consult-compile-error)
+   ("M-g f" . consult-make)
+   ("M-g g" . consult-goto-line)             ;; orig. goto-line
+   ("M-g M-g" . consult-goto-line)           ;; orig. goto-line
+   ("M-g o" . consult-outline)
+   ("M-g m" . consult-mark)
+   ("M-g k" . consult-global-mark)
+   ("M-g i" . consult-imenu)
+   ("M-g I" . consult-imenu-multi)
+
+   ;; M-s bindings (search-map)
+   ("M-s d" . consult-find)
+   ("M-s D" . consult-locate)
+   ("M-s g" . consult-grep)
+   ("M-s G" . consult-git-grep)
+   ("M-s r" . consult-ripgrep)
+   ("M-s l" . consult-line)
+   ("M-s L" . consult-line-multi)
+   ("M-s k" . consult-keep-lines)
+   ("M-s u" . consult-focus-lines)
+
+   ;; Isearch integration
+   ("M-s e" . consult-isearch-history)
+   :map isearch-mode-map
+   ("M-e" . consult-isearch-history)         ;; orig. isearch-edit-string
+   ("M-s e" . consult-isearch-history)       ;; orig. isearch-edit-string
+   ("M-s l" . consult-line)                  ;; needed by consult-line to detect isearch
+   ("M-s L" . consult-line-multi)            ;; needed by consult-line to detect isearch
+
+   ;; Minibuffer history
+   :map minibuffer-local-map
+   ("M-s" . consult-history)                 ;; orig. next-matching-history-element
+   ("M-r" . consult-history)                 ;; orig. previous-
+   )
+
+  :init
+  ;; Use Consult to select xref locations with preview
+  (setq xref-show-xrefs-function 'consult-xref
+        xref-show-definitions-function 'consult-xref))
+
+(use-package orderless
+  :init
+  (setq completion-styles '(orderless basic)
+        completion-category-defaults nil
+        completion-category-overrides '((file . ((styles . (basic partial-completion))))
+                                        (eglot . ((styles . (orderless))))))
+  (setq orderless-component-separator "[ &]"))
+
+(use-package recentf
+  :init
+  (setq recentf-max-menu-items 100)
+  (recentf-mode))
+
+(use-package windmove
+  :config
+  (windmove-default-keybindings 'shift))
+
+(use-package window
+  :config
+  (setq split-height-threshold nil))
 
 (use-package engine-mode
+  :init
+  (engine-mode)
   :config
   (defengine duckduckgo
     "https://duckduckgo.com/?q=%s"
@@ -70,11 +159,11 @@
   (defengine wiktionary
     (concat "https://www.wikipedia.org/search-redirect.php?"
             "family=wiktionary&language=en&go=Go&search=%s")
-    :keybinding "t")
-  (engine-mode))
+    :keybinding "t"))
 
 (use-package newcomment
-  :init
+  :defer
+  :config
   (setq comment-empty-lines t))
 
 (use-package calendar
@@ -97,19 +186,16 @@
   (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t))
 
 (use-package mu4e-alert
-  :config
-  (setq mu4e-alert-email-notification-types '(count))
+  :init
+  (setq mu4e-alert-email-notification-types '(count subjects))
   (mu4e-alert-set-default-style 'notifications)
   :hook
+  (after-init-hook . mu4e-alert-enable-notifications)
   (after-init-hook . mu4e-alert-enable-mode-line-display))
 
 (use-package mml-sec
   :hook
   (mu4e-compose-mode-hook . sign-mail)
-  :init
-  (setq mml-default-sign-method "smime"
-        mml-default-encrypt-method "smime"
-        mml-secure-smime-sign-with-sender t)
   :config
   (defun sign-mail ()
     (let* ((ctx (mu4e-context-current))
@@ -121,13 +207,12 @@
 
 (use-package mu4e
   :demand
-  :bind
-  (("C-c m" . mu4e)
-   :map mu4e-main-mode-map
-   ("q" . bury-buffer))
   :hook
   (dired-mode-hook . turn-on-gnus-dired-mode)
+  (after-init-hook . (lambda ()
+                       (mu4e-update-mail-and-index t)))
   :config
+  (setq mu4e-update-interval 300)
   (setq mail-user-agent 'mu4e-user-agent)
   (setq gnus-dired-mail-mode 'mu4e-user-agent)
   (setq read-mail-command 'mu4e)
@@ -136,8 +221,8 @@
                               (:mailing-list . 10)
                               (:from-or-to . 22)
                               (:thread-subject)))
+  (setq mu4e-completing-read-function 'completing-read)
   (setq mu4e-get-mail-command "mbsync -a")
-  (setq mu4e-update-interval 30)
   (setq mu4e-hide-index-messages t)
   (setq mu4e-change-filenames-when-moving t)
   (setq message-send-mail-function 'smtpmail-send-it)
@@ -190,11 +275,14 @@
               (smtpmail-smtp-service . 587)
               (smtpmail-stream-type . starttls)
               (mu4e-compose-signature . t)))))
-  (mu4e t))
+  :bind
+  (("C-c m" . mu4e)
+   :map mu4e-main-mode-map
+   ("q" . bury-buffer)))
 
 (use-package auth-source
   :config
-  (setq auth-sources '("secrets:default")))
+  (setq auth-sources '("secrets:Login")))
 
 (use-package pyvenv
   :config
@@ -207,7 +295,7 @@
   (setq ediff-window-setup-function 'ediff-setup-windows-plain))
 
 (use-package desktop
-  :config
+  :init
   (setq desktop-restore-frames nil)
   (setq desktop-load-locked-desktop t)
   (desktop-save-mode))
@@ -216,6 +304,13 @@
   :config
   (mood-line-mode))
 
+(use-package vterm
+  :defer
+  :config
+  (setq vterm-buffer-name-string "*vterm %s*")
+  :bind
+  ("C-c t" . vterm))
+
 (use-package eshell-vterm
   :init
   (eshell-vterm-mode))
@@ -223,67 +318,74 @@
 (use-package esh-module
   :defer
   :config
-  (dolist (module '(eshell-tramp ;; eshell-smart
-                    ))
+  (dolist (module '(eshell-tramp eshell-elecslash))
     (add-to-list 'eshell-modules-list module)))
 
 (use-package em-term
   :defer
   :config
-  (setq eshell-destroy-buffer-when-process-dies nil)
-  (dolist (command '("vim" "vifm" "nmtui" "alsamixer" "gh" "pulsemixer"))
+  (setq eshell-destroy-buffer-when-process-dies t)
+  (dolist (command '("vim" "vifm" "nmtui" "alsamixer"))
     (add-to-list 'eshell-visual-commands command))
   (dolist (subcommand '(("aur" "sync")))
     (add-to-list 'eshell-visual-subcommands subcommand)))
-
-(use-package em-smart
-  :defer
-  :config
-  ;; (setq eshell-review-quick-commands 'not-even-short-output)
-  )
 
 (use-package eshell
   :hook
   (eshell-mode-hook . rename-eshell-buffer)
   (eshell-directory-change-hook . rename-eshell-buffer)
-  :config
-  (setq eshell-history-size 1000)
+  (eshell-expand-input-functions . eshell-expand-history-references)
+  :init
+  (setq eshell-history-size 10000)
   (defun rename-eshell-buffer ()
-    (rename-buffer (concat "*eshell: "
-                           (abbreviate-file-name (directory-file-name
-                                                  default-directory))
-                           "*")
-                   t)))
+    (unless eshell-non-interactive-p
+      (rename-buffer (format "*eshell: %s*"
+                             (abbreviate-file-name (directory-file-name
+                                                    default-directory)))
+                     t)))
+
+  (defun spawn-eshell (display)
+    "Create a frame with a dedicated Eshell window."
+    (select-frame (make-frame-on-display display))
+    (let* ((default-directory "~")
+           (buffer (eshell)))
+      (set-window-dedicated-p (get-buffer-window buffer) t))))
+
+(use-package pcomplete
+  :init
+  (setq shell-dynamic-complete-functions
+        '(pcomplete-completions-at-point)))
+
+(use-package pcmpl-args
+  :after
+  (pcomplete))
 
 (use-package bash-completion
+  :after
+  (pcomplete)
+
   :hook
-  (shell-dynamic-complete-functions . bash-completion-dynamic-complete)
   (eshell-mode-hook . bash-completion-from-eshell)
+
+  :init
+  (add-to-list 'shell-dynamic-complete-functions
+               'bash-completion-dynamic-complete
+               t)
+
   :config
   (defun bash-completion-eshell-capf ()
-    (append (bash-completion-dynamic-complete-nocomint
-             (save-excursion (eshell-bol) (point))
-             (point) t)
-            '(:exclusive no)))
+    (bash-completion-dynamic-complete-nocomint
+     (save-excursion (eshell-bol) (point))
+     (point) t))
 
   (defun bash-completion-from-eshell ()
-    (add-hook 'completion-at-point-functions
-              'bash-completion-eshell-capf 0 t)))
-
-(defun bash-completion-eshell-capf ()
-  (append (bash-completion-dynamic-complete-nocomint
-           (save-excursion (eshell-bol) (point))
-           (point) t)
-          '(:exclusive no)))
-
-(defun bash-completion-from-eshell ()
-  (add-hook 'completion-at-point-functions
-            'bash-completion-eshell-capf 0 t))
-
-(add-hook 'eshell-mode-hook 'bash-completion-from-eshell)
+    (setq-local pcomplete-default-completion-function 'ignore)
+    (setq-local completion-at-point-functions
+                (append completion-at-point-functions
+                        '(bash-completion-eshell-capf)))))
 
 (use-package savehist
-  :config
+  :init
   (savehist-mode))
 
 (use-package which-key
@@ -318,6 +420,8 @@
   (before-save-hook . delete-trailing-whitespace))
 
 (use-package visual-fill-column
+  :config
+  (setq visual-fill-column-enable-sensible-window-split t)
   :hook
   (visual-line-mode-hook . visual-fill-column-mode))
 
@@ -341,26 +445,17 @@
   (("C-x C-b" . ibuffer)))
 
 (use-package imenu
+  :defer
   :config
-  (setq imenu-auto-rescan t)
-  :bind
-  (nil
-   :map prog-mode-map
-   ("C-c i" . imenu)))
-
-(use-package flimenu
-  :config
-  (flimenu-global-mode))
+  (setq imenu-auto-rescan t))
 
 (use-package compile
   :bind
   (("C-c c" . compile)))
 
-(use-package mwheel
-  :config
-  (setq mouse-wheel-scroll-amount '(1 ((shift) . 1))
-        mouse-wheel-progressive-speed nil
-        mouse-wheel-follow-mouse 't))
+(use-package pixel-scroll
+  :init
+  (pixel-scroll-precision-mode))
 
 (use-package gdb-mi
   :defer
@@ -401,9 +496,11 @@
   (file-file-hook . elide-head))
 
 (use-package org
+  :commands
+  (my-agenda)
   :hook
   (org-mode-hook . (lambda ()
-                     (setq-local fill-column 79)
+                     (setq-local fill-column 80)
                      (visual-line-mode)))
   (mu4e-compose-mode-hook . turn-on-orgtbl)
 
@@ -418,6 +515,19 @@
       `(file ,(expand-file-name name org-template-directory))))
 
   :config
+  (setq org-cite-global-bibliography
+        (list (expand-file-name "ca.bib"
+                                (expand-file-name "bib" org-directory))))
+
+  (setq org-hide-emphasis-markers nil)
+  (setq org-startup-folded 'nofold)
+  (setq org-image-actual-width 800)
+
+  (dolist (x '((latex biblatex "ieee" "ieee")
+               (t csl "ieee.csl" "ieee.csl")))
+    (add-to-list 'org-cite-export-processors x))
+
+  (add-to-list 'org-link-frame-setup '(file . find-file))
   (setq org-refile-targets '((org-agenda-files . (:maxlevel . 2))))
   (setq org-clock-out-remove-zero-time-clocks t)
   (setq org-refile-use-outline-path 'file)
@@ -459,17 +569,23 @@
   (setq org-fast-tag-selection-single-key 'expert)
   (org-babel-do-load-languages
    'org-babel-load-languages
-   (mapcar (lambda (language)
-             `(,language . t))
-           '(shell haskell C python)))
-  (dolist (module '(org-id org-attach oc-biblatex ox-reveal))
+   '((shell . t)
+     (haskell . t)
+     (C . t)
+     (python . t)
+     (bibtex . nil)))
+  (setq org-confirm-babel-evaluate nil)
+  (setq org-cite-csl-styles-dir "~/Repos/csl-styles")
+  (dolist (module '(org-id org-attach oc-biblatex oc-csl ox-reveal))
     (add-to-list 'org-modules module))
+
+  (defun my-agenda ()
+    (interactive)
+    (org-agenda nil "n"))
 
   :bind
   (("C-c l" . org-store-link)
-   ("C-c a" . (lambda ()
-                (interactive)
-                (org-agenda nil "n")))
+   ("C-c a" . my-agenda)
    ("C-c p" . org-capture)
    :map dired-mode-map
    ("C-c C-x a" . org-attach-dired-to-subtree)))
@@ -483,10 +599,9 @@
   :defer
   :init
   (setq org-roam-directory (expand-file-name "roam" org-directory))
-  (use-package org-roam-protocol)
   :config
   (setq org-roam-node-display-template
-        (concat "${title:64} "
+        (concat "${title:*} "
                 (propertize "${tags}" 'face 'org-tag)))
   (setq org-roam-db-node-include-function
         (lambda ()
@@ -500,7 +615,9 @@
              ,(org-template-arg (plist-get config 'template))
              :target
              (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
-                        ,(format "#+title: ${title}\n#+filetags: :%s:\n"
+                        ,(format
+                          (concat "#+title: ${title}\n"
+                                  "#+filetags: :%s:\n")
                                  (mapconcat 'identity
                                             (plist-get config 'tags)
                                             ":")))
@@ -517,7 +634,11 @@
            ( key "e"
              description "Entry point"
              template nil
-             tags ("entry")))))
+             tags ("entry"))
+           ( key "v"
+             description "CIV4 game"
+             template "civ"
+             tags ("game")))))
 
   (org-roam-db-autosync-mode)
   :bind
@@ -526,15 +647,26 @@
   ("C-c r p" . org-roam-capture)
   ("C-c r b" . org-roam-buffer-toggle))
 
-(use-package selectrum
-  :config
-  (selectrum-mode)
-  (selectrum-prescient-mode)
-  (prescient-persist-mode))
+(use-package org-roam-ui
+  :defer
+  :init
+  (setq org-roam-ui-open-on-start nil)
+  (add-to-list 'desktop-minor-mode-table
+               '(org-roam-ui-mode nil))
+  (add-to-list 'desktop-minor-mode-table
+               '(org-roam-ui-follow-mode nil)))
+
+(use-package vertico
+  :init
+  (vertico-mode))
 
 (use-package ffap
   :config
   (ffap-bindings))
+
+(use-package files
+  :config
+  (setq auto-save-file-name-transforms nil))
 
 (use-package tramp
   :defer
@@ -545,7 +677,17 @@
                (not
                 (let ((method (file-remote-p name 'method)))
                   (when (stringp method)
-                    (member method '("su" "sudo" "ssh"))))))))
+                    (member method '("su" "sudo"))))))))
+
+  (defun rename-tramp-buffer ()
+    (when (tramp-tramp-file-p buffer-file-name)
+      (let* ((tramp (tramp-dissect-file-name buffer-file-name))
+             (host (tramp-file-name-host tramp))
+             (file (file-name-nondirectory (tramp-file-name-localname tramp))))
+        (rename-buffer (generate-new-buffer-name
+                        (format "@%s: %s" host file))))))
+
+  (add-hook 'find-file-hooks 'rename-tramp-buffer)
   (add-to-list 'tramp-remote-path 'tramp-own-remote-path))
 
 (use-package flyspell
@@ -560,11 +702,11 @@
 
 (use-package flymake
   :bind
-  (nil
-   :map flymake-mode-map
-   ("C-c e n" . flymake-goto-next-error)
-   ("C-c e p" . flymake-goto-prev-error)
-   ("C-c e l" . flymake-show-diagnostics-buffer)))
+  ( :map flymake-mode-map
+    ("M-g n" . flymake-goto-next-error)
+    ("M-g p" . flymake-goto-prev-error))
+  :hook
+  (emacs-lisp-mode-hook . flymake-mode))
 
 (use-package dired
   :config
@@ -580,24 +722,82 @@
   (dired-mode-hook . turn-on-gnus-dired-mode))
 
 (use-package eldoc
+  :init
+  (setq eldoc-echo-area-display-truncation-message nil)
   :config
   (eldoc-add-command 'c-electric-paren))
 
-(use-package company
-  :defer
-  :config
-  (setq company-minimum-prefix-length 3
-        company-idle-delay 0.0)
-  :hook
-  (prog-mode-hook . company-mode)
-  (latex-mode-hook . company-mode))
+(use-package corfu
+  :custom
+  (corfu-auto t)                 ;; Enable auto completion
+  (corfu-auto-delay 0)
+  (corfu-auto-prefix 3)
+  (corfu-separator ?\&)          ;; Orderless field separator
+  (corfu-popupinfo-delay t)
 
-(use-package yasnippet
+  :init
+  (defun corfu-enable-always-in-minibuffer ()
+    "Enable Corfu in the minibuffer if Vertico/Mct are not active."
+    (unless (or (bound-and-true-p mct--active)
+                (bound-and-true-p vertico--input))
+      (setq-local corfu-auto nil
+                  corfu-echo-delay nil ;; Disable automatic echo and popup
+                  corfu-popupinfo-delay nil)
+      (corfu-mode 1)))
+  (add-hook 'minibuffer-setup-hook #'corfu-enable-always-in-minibuffer 1)
+
+  (add-to-list 'savehist-additional-variables 'corfu-history)
+
+  (global-corfu-mode)
+  (corfu-popupinfo-mode)
+  (corfu-history-mode)
+
+  :bind
+  (:map corfu-map ("M-SPC" . corfu-insert-separator))
+
+  :hook
+  (eshell-mode-hook . (lambda ()
+                        (setq-local corfu-auto nil))))
+
+(use-package kind-icon
+  :after corfu
+  :custom
+  (kind-icon-default-face 'corfu-default) ; to compute blended backgrounds correctly
+  (kind-icon-default-style
+   '(:padding -1 :stroke 0 :margin 0 :radius 0 :height 0.5 :scale 1.0))
+  :config
+  (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
+
+(use-package marginalia
+  :init
+  (marginalia-mode)
+  :bind
+  ( :map minibuffer-local-map
+    ("M-A" . marginalia-cycle)))
+
+(use-package racket-mode
+  :defer
+  :hook
+  (racket-mode-hook . racket-xp-mode))
+
+(use-package racket-xp
+  :defer
+  :hook
+  (racket-xp-mode-hook
+   . (lambda ()
+       (remove-hook 'pre-redisplay-functions
+                    #'racket-xp-pre-redisplay
+                    t))))
+
+(use-package scheme
   :defer
   :init
-  (add-hook 'prog-mode-hook 'yas-minor-mode)
-  :config
-  (yas-reload-all))
+  (setq auto-mode-alist
+        (remove '("\\.rkt\\'" . scheme-mode) auto-mode-alist)))
+
+(use-package yasnippet
+  :init
+  (yas-global-mode))
 
 (use-package hideshow
   :hook
@@ -610,37 +810,28 @@
 
 (use-package eglot
   :bind
-  (nil
-   :map eglot-mode-map
-   ("C-c s r" . eglot-rename)
-   ("C-c s f" . eglot-format)
-   ("C-c s a" . eglot-code-actions))
+  ( :map eglot-mode-map
+    ("C-c s r" . eglot-rename)
+    ("C-c s f" . eglot-format)
+    ("C-c s a" . eglot-code-actions))
   :config
-  ;; (setq eglot-confirm-server-initiated-edits nil)
   (add-to-list 'eglot-server-programs
                '(cmake-mode . ("cmake-language-server")))
-  (add-to-list 'eglot-server-programs
-               '(java-mode . (lambda ()
-                               (interactive)
-                               (let ((workspace
-                                      (expand-file-name
-                                       (md5 (project-root (project-current)))
-                                       "/tmp")))
-                                 (list "jdtls" "-data" workspace)))))
+
+  (setq-default eglot-workspace-configuration
+                '(:haskell
+                  ( :maxCompletions 50
+                    :formattingProvider "fourmolu")))
+
   :hook
-  (eglot-managed-mode-hook
-   . (lambda ()
-       (add-to-list 'company-backends
-                    '(company-capf :with company-yasnippet))))
-;; ((c-mode-hook c++-mode-hook java-mode-hook python-mode-hook haskell-mode-hook)
-;;  . eglot-ensure)
-)
+  (eglot-managed-mode-hook . (lambda ()
+                               (setq-local eldoc-documentation-strategy
+                                           'eldoc-documentation-compose))))
 
 (use-package cc-mode
   :config
   (dolist (map '(c-mode-map c++-mode-map))
-    (bind-key "C-c o" 'ff-find-other-file map)
-    (bind-key "C-c d" 'disaster map))
+    (bind-key "C-c o" 'ff-find-other-file map))
   (c-add-style "m5"
 	       '((c-basic-offset . 4)
                  (indent-tabs-mode . nil)
@@ -665,10 +856,6 @@
   :mode
   "\\.mzn\\'")
 
-(use-package opencl-mode
-  :mode
-  "\\.cl\\'")
-
 (use-package make-mode
   :mode
   ("makefile" . makefile-gmake-mode))
@@ -691,12 +878,9 @@
     ("C-c H" . haskell-hoogle))
   :config
   (setq haskell-compile-command
-        "ghc -dynamic -Wall -ferror-spans -fforce-recomp %s"))
-
-(use-package langtool
-  :init
-  (setq langtool-java-classpath
-        "/usr/share/languagetool:/usr/share/java/languagetool/*"))
+        "ghc -O3 -dynamic -Wall -ferror-spans -fforce-recomp %s")
+  (setq haskell-hoogle-command
+        "hoogle -n 1024 --numbers"))
 
 (use-package tex
   :init
@@ -731,8 +915,10 @@
   :init
   (setq vc-follow-symlinks t))
 
-(use-package forge
-  :after magit)
+(use-package geiser
+  :defer
+  :config
+  (setq geiser-repl-current-project-function 'ignore))
 
 ;;; init.el ends here
 (put 'narrow-to-region 'disabled nil)
