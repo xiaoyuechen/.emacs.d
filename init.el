@@ -1,4 +1,4 @@
-;;; init.el --- My personal Emacs init file          -*- lexical-binding: t; -*-
+;;; Init.el --- My personal Emacs init file          -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2022, 2023  Xiaoyue Chen
 
@@ -131,7 +131,7 @@
 
 (use-package windmove
   :config
-  (windmove-default-keybindings 'shift))
+  (windmove-default-keybindings '(meta shift)))
 
 (use-package window
   :config
@@ -187,10 +187,10 @@
 
 (use-package mu4e-alert
   :init
-  (setq mu4e-alert-email-notification-types '(count subjects))
-  (mu4e-alert-set-default-style 'notifications)
+  ;; (setq mu4e-alert-email-notification-types '(count subjects))
+  ;; (mu4e-alert-set-default-style 'notifications)
   :hook
-  (after-init-hook . mu4e-alert-enable-notifications)
+  ;; (after-init-hook . mu4e-alert-enable-notifications)
   (after-init-hook . mu4e-alert-enable-mode-line-display))
 
 (use-package mml-sec
@@ -325,7 +325,7 @@
   :defer
   :config
   (setq eshell-destroy-buffer-when-process-dies t)
-  (dolist (command '("vim" "vifm" "nmtui" "alsamixer"))
+  (dolist (command '("vim" "vifm" "nmtui" "alsamixer" "gh"))
     (add-to-list 'eshell-visual-commands command))
   (dolist (subcommand '(("aur" "sync")))
     (add-to-list 'eshell-visual-subcommands subcommand)))
@@ -360,6 +360,10 @@
   :after
   (pcomplete))
 
+(use-package pcmpl-gnu
+  :after
+  (pcomplete))
+
 (use-package bash-completion
   :after
   (pcomplete)
@@ -380,9 +384,7 @@
 
   (defun bash-completion-from-eshell ()
     (setq-local pcomplete-default-completion-function 'ignore)
-    (setq-local completion-at-point-functions
-                (append completion-at-point-functions
-                        '(bash-completion-eshell-capf)))))
+    (add-hook 'completion-at-point-functions 'bash-completion-eshell-capf 0 t)))
 
 (use-package savehist
   :init
@@ -510,6 +512,7 @@
   (setq org-template-directory (expand-file-name "templates" org-directory))
   (setq org-default-notes-file (expand-file-name "notes" org-notes-directory))
   (setq org-agenda-files (expand-file-name "agenda-file-list" org-directory))
+  (setq org-babel-tangle-use-relative-file-links nil)
   (defun org-template-arg (name)
     (when name
       `(file ,(expand-file-name name org-template-directory))))
@@ -601,7 +604,7 @@
   (setq org-roam-directory (expand-file-name "roam" org-directory))
   :config
   (setq org-roam-node-display-template
-        (concat "${title:*} "
+        (concat "${title:60*} "
                 (propertize "${tags}" 'face 'org-tag)))
   (setq org-roam-db-node-include-function
         (lambda ()
