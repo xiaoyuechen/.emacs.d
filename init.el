@@ -1,4 +1,4 @@
-;;; Init.el --- My personal Emacs init file          -*- lexical-binding: t; -*-
+;;; init.el --- My personal Emacs init file          -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2022, 2023  Xiaoyue Chen
 
@@ -365,26 +365,21 @@
   (pcomplete))
 
 (use-package bash-completion
-  :after
-  (pcomplete)
-
   :hook
   (eshell-mode-hook . bash-completion-from-eshell)
 
   :init
-  (add-to-list 'shell-dynamic-complete-functions
-               'bash-completion-dynamic-complete
-               t)
+  (add-to-list 'shell-dynamic-complete-functions 'bash-completion-dynamic-complete)
 
   :config
-  (defun bash-completion-eshell-capf ()
-    (bash-completion-dynamic-complete-nocomint
-     (save-excursion (eshell-bol) (point))
-     (point) t))
-
   (defun bash-completion-from-eshell ()
-    (setq-local pcomplete-default-completion-function 'ignore)
-    (add-hook 'completion-at-point-functions 'bash-completion-eshell-capf 0 t)))
+    (add-hook 'completion-at-point-functions
+              (lambda ()
+                (bash-completion-dynamic-complete-nocomint
+                 (save-excursion (eshell-bol) (point))
+                 (point) t))
+              nil
+              t)))
 
 (use-package savehist
   :init
