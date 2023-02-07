@@ -64,6 +64,11 @@
 
   (pixel-scroll-precision-mode)
 
+  (put 'upcase-region 'disabled nil)
+  (put 'downcase-region 'disabled nil)
+  (put 'narrow-to-region 'disabled nil)
+  (put 'narrow-to-page 'disabled nil)
+
   :hook
   (minibuffer-setup-hook . cursor-intangible-mode)
   (before-save-hook . delete-trailing-whitespace))
@@ -92,6 +97,8 @@
     (interactive)
     (call-process "xdg-open" nil 0 nil
                   (dired-get-filename nil t)))
+
+  (put 'dired-find-alternate-file 'disabled nil)
 
   :bind
   (nil
@@ -905,16 +912,14 @@
   :init
   (setq vc-follow-symlinks t))
 
+(use-package magit
+  :defer
+  :config
+  (put 'magit-clean 'disabled nil))
+
 (use-package geiser
   :defer
   :config
   (setq geiser-repl-current-project-function 'ignore))
-
-(put 'narrow-to-region 'disabled nil)
-(put 'narrow-to-page 'disabled nil)
-(put 'dired-find-alternate-file 'disabled nil)
-(put 'upcase-region 'disabled nil)
-(put 'downcase-region 'disabled nil)
-(put 'magit-clean 'disabled nil)
 
 ;;; init.el ends here
