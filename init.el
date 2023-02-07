@@ -118,7 +118,20 @@
 
   ;; Use Consult to select xref locations with preview
   (setq xref-show-xrefs-function 'consult-xref
-        xref-show-definitions-function 'consult-xref))
+        xref-show-definitions-function 'consult-xref)
+
+  :config
+  (consult-customize
+   consult--source-bookmark consult--source-file-register
+   consult--source-recent-file consult--source-project-recent-file
+   :preview-key "M-."))
+
+(use-package consult-dir
+  :bind
+  (("C-x C-d" . consult-dir)
+   :map vertico-map
+   ("C-x C-d" . consult-dir)
+   ("C-x C-j" . consult-dir-jump-file)))
 
 (use-package orderless
   :init
