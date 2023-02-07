@@ -23,34 +23,80 @@
 
 ;;; Code:
 
-(setq user-full-name "Xiaoyue Chen"
-      user-mail-address "xiaoyue.chen@it.uu.se")
-
-(setq custom-file "~/.emacs.d/custom.el")
-(load custom-file)
-
-(setq use-package-hook-name-suffix nil)
 (setq use-package-enable-imenu-support t)
 
 (add-to-list 'command-switch-alist
              '("--denv" . (lambda (_) (load "~/.emacs.d/denv.el"))))
 
 (use-package emacs
-  :demand
-  :config
+  :init
+  (setq user-full-name "Xiaoyue Chen"
+        user-mail-address "xiaoyue.chen@it.uu.se")
+
+  (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
   (setq x-underline-at-descent-line t)
   (setq max-mini-window-height 0.6)
+  (setq split-height-threshold nil)
   (setq enable-recursive-minibuffers t)
   (setq sentence-end-double-space nil)
   (setq require-final-newline t)
   (setq-default indent-tabs-mode nil)
   (setq tab-always-indent 'complete)
   (setq delete-by-moving-to-trash t)
+  (setq comment-empty-lines t)
   (setq async-shell-command-buffer 'new-buffer)
-  (setq backup-by-copying-when-linked t)
   (setq minibuffer-prompt-properties
         '(read-only t cursor-intangible t face minibuffer-prompt))
-  (add-hook 'minibuffer-setup-hook 'cursor-intangible-mode))
+  (setq visual-line-fringe-indicators '(left-curly-arrow right-arrow))
+  (setq set-mark-command-repeat-pop t)
+
+  (menu-bar-mode -1)
+  (tool-bar-mode -1)
+  (scroll-bar-mode -1)
+
+  (advice-add 'async-shell-command :after
+              (lambda (command &optional output-buffer error-buffer)
+                (unless output-buffer
+                  (let ((output-buffer
+                         (concat "*CMD " command "*")))
+                    (with-current-buffer shell-command-buffer-name-async
+                      (rename-buffer output-buffer t))))))
+
+  (pixel-scroll-precision-mode)
+
+  :hook
+  (minibuffer-setup-hook . cursor-intangible-mode)
+  (before-save-hook . delete-trailing-whitespace))
+
+(use-package use-package
+  :init
+  (setq use-package-always-ensure t)
+  (setq use-package-hook-name-suffix nil))
+
+(use-package use-package-ensure)
+
+(use-package package
+  :config
+  (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t))
+
+(use-package comint
+  :ensure emacs
+  :config
+  (setq comint-prompt-read-only t
+        comint-buffer-maximum-size 20000))
+
+(use-package dired
+  :ensure emacs
+  :config
+  (defun xdg-open-from-dired ()
+    (interactive)
+    (call-process "xdg-open" nil 0 nil
+                  (dired-get-filename nil t)))
+
+  :bind
+  (nil
+   :map dired-mode-map
+   ("C-c o" . xdg-open-from-dired)))
 
 (use-package consult
   :bind
@@ -141,6 +187,8 @@
                                         (eglot . ((styles . (orderless))))))
   (setq orderless-component-separator "[ &]"))
 
+(use-package delight)
+
 (use-package recentf
   :init
   (setq recentf-max-saved-items 1000)
@@ -150,10 +198,6 @@
 (use-package windmove
   :config
   (windmove-default-keybindings '(meta shift)))
-
-(use-package window
-  :config
-  (setq split-height-threshold nil))
 
 (use-package engine-mode
   :init
@@ -179,11 +223,6 @@
             "family=wiktionary&language=en&go=Go&search=%s")
     :keybinding "t"))
 
-(use-package newcomment
-  :defer
-  :config
-  (setq comment-empty-lines t))
-
 (use-package calendar
   :defer
   :config
@@ -199,10 +238,6 @@
         (propertize "Wk"
                     'font-lock-face 'font-lock-keyword-face)))
 
-(use-package package
-  :config
-  (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t))
-
 (use-package mu4e-alert
   :init
   ;; (setq mu4e-alert-email-notification-types '(count subjects))
@@ -211,9 +246,10 @@
   ;; (after-init-hook . mu4e-alert-enable-notifications)
   (after-init-hook . mu4e-alert-enable-mode-line-display))
 
-(use-package mml-sec
+(use-package gnus
   :hook
   (mu4e-compose-mode-hook . sign-mail)
+  (dired-mode-hook . turn-on-gnus-dired-mode)
   :config
   (defun sign-mail ()
     (let* ((ctx (mu4e-context-current))
@@ -221,9 +257,12 @@
       (when name
         (cond
          ((equal name "uu")
-          (mml-secure-sign)))))))
+          (mml-secure-sign))))))
+
+  (setq mml-secure-openpgp-sign-with-sender t))
 
 (use-package mu4e
+  :ensure nil
   :demand
   :hook
   (dired-mode-hook . turn-on-gnus-dired-mode)
@@ -323,27 +362,23 @@
   :init
   (eshell-vterm-mode))
 
-(use-package esh-module
-  :defer
-  :config
-  (dolist (module '(eshell-tramp eshell-elecslash))
-    (add-to-list 'eshell-modules-list module)))
-
-(use-package em-term
-  :defer
-  :config
-  (setq eshell-destroy-buffer-when-process-dies t)
-  (dolist (command '("vim" "vifm" "nmtui" "alsamixer" "gh"))
-    (add-to-list 'eshell-visual-commands command))
-  (dolist (subcommand '(("aur" "sync")))
-    (add-to-list 'eshell-visual-subcommands subcommand)))
-
 (use-package eshell
   :hook
   (eshell-mode-hook . rename-eshell-buffer)
   (eshell-directory-change-hook . rename-eshell-buffer)
   (eshell-expand-input-functions . eshell-expand-history-references)
+
   :init
+  (defun spawn-eshell (display)
+    "Create a frame with a dedicated Eshell window."
+    (select-frame (make-frame-on-display display))
+    (let* ((default-directory "~")
+           (buffer (eshell)))
+      (set-window-dedicated-p (get-buffer-window buffer) t)))
+
+  :config
+  (dolist (module '(eshell-tramp eshell-elecslash))
+    (add-to-list 'eshell-modules-list module))
   (setq eshell-history-size 10000)
   (defun rename-eshell-buffer ()
     (unless eshell-non-interactive-p
@@ -351,13 +386,11 @@
                              (abbreviate-file-name (directory-file-name
                                                     default-directory)))
                      t)))
-
-  (defun spawn-eshell (display)
-    "Create a frame with a dedicated Eshell window."
-    (select-frame (make-frame-on-display display))
-    (let* ((default-directory "~")
-           (buffer (eshell)))
-      (set-window-dedicated-p (get-buffer-window buffer) t))))
+  (setq eshell-destroy-buffer-when-process-dies t)
+  (dolist (command '("vim" "vifm" "nmtui" "alsamixer" "gh"))
+    (add-to-list 'eshell-visual-commands command))
+  (dolist (subcommand '(("aur" "sync")))
+    (add-to-list 'eshell-visual-subcommands subcommand)))
 
 (use-package pcomplete
   :init
@@ -365,10 +398,6 @@
         '(pcomplete-completions-at-point)))
 
 (use-package pcmpl-args
-  :after
-  (pcomplete))
-
-(use-package pcmpl-gnu
   :after
   (pcomplete))
 
@@ -394,35 +423,9 @@
   (savehist-mode))
 
 (use-package which-key
-  :config
+  :delight
+  :init
   (which-key-mode))
-
-(use-package menu-bar
-  :config
-  (menu-bar-mode -1))
-
-(use-package tool-bar
-  :config
-  (tool-bar-mode -1))
-
-(use-package scroll-bar
-  :config
-  (scroll-bar-mode -1))
-
-(use-package simple
-  :demand
-  :config
-  (setq set-mark-command-repeat-pop t)
-  (advice-add 'async-shell-command :after
-              (lambda (command &optional output-buffer error-buffer)
-                (unless output-buffer
-                  (let ((output-buffer
-                         (concat "*CMD " command "*")))
-                    (with-current-buffer shell-command-buffer-name-async
-                      (rename-buffer output-buffer t))))))
-  (setq visual-line-fringe-indicators '(left-curly-arrow right-arrow))
-  :hook
-  (before-save-hook . delete-trailing-whitespace))
 
 (use-package visual-fill-column
   :config
@@ -458,10 +461,6 @@
   :bind
   (("C-c c" . compile)))
 
-(use-package pixel-scroll
-  :init
-  (pixel-scroll-precision-mode))
-
 (use-package gdb-mi
   :defer
   :config
@@ -470,12 +469,6 @@
 (use-package autorevert
   :config
   (global-auto-revert-mode))
-
-(use-package comint
-  :defer
-  :config
-  (setq comint-prompt-read-only t
-        comint-buffer-maximum-size 20000))
 
 (use-package lice)
 
@@ -656,11 +649,7 @@
 (use-package org-roam-ui
   :defer
   :init
-  (setq org-roam-ui-open-on-start nil)
-  (add-to-list 'desktop-minor-mode-table
-               '(org-roam-ui-mode nil))
-  (add-to-list 'desktop-minor-mode-table
-               '(org-roam-ui-follow-mode nil)))
+  (setq org-roam-ui-open-on-start nil))
 
 (use-package vertico
   :init
@@ -669,10 +658,6 @@
 (use-package ffap
   :config
   (ffap-bindings))
-
-(use-package files
-  :config
-  (setq auto-save-file-name-transforms nil))
 
 (use-package tramp
   :defer
@@ -688,6 +673,7 @@
   (add-to-list 'tramp-remote-path 'tramp-own-remote-path))
 
 (use-package flyspell
+  :delight
   :bind
   (nil
    :map flyspell-mode-map
@@ -705,20 +691,8 @@
   :hook
   (emacs-lisp-mode-hook . flymake-mode))
 
-(use-package dired
-  :config
-  (defun xdg-open-from-dired ()
-    (interactive)
-    (call-process "xdg-open" nil 0 nil
-                  (dired-get-filename nil t)))
-  :bind
-  (nil
-   :map dired-mode-map
-   ("C-c o" . xdg-open-from-dired))
-  :hook
-  (dired-mode-hook . turn-on-gnus-dired-mode))
-
 (use-package eldoc
+  :delight
   :init
   (setq eldoc-echo-area-display-truncation-message nil)
   :config
@@ -775,16 +749,13 @@
 (use-package racket-mode
   :defer
   :hook
-  (racket-mode-hook . racket-xp-mode))
-
-(use-package racket-xp
-  :defer
-  :hook
+  (racket-mode-hook . racket-xp-mode)
   (racket-xp-mode-hook
    . (lambda ()
        (remove-hook 'pre-redisplay-functions
                     #'racket-xp-pre-redisplay
                     t))))
+
 
 (use-package scheme
   :defer
@@ -793,10 +764,12 @@
         (remove '("\\.rkt\\'" . scheme-mode) auto-mode-alist)))
 
 (use-package yasnippet
+  :delight yas-minor-mode
   :init
   (yas-global-mode))
 
 (use-package hideshow
+  :delight hs-minor-mode
   :hook
   (prog-mode-hook . hs-minor-mode))
 
@@ -832,10 +805,20 @@
                                (setq-local eldoc-documentation-strategy
                                            'eldoc-documentation-compose))))
 
+(use-package find-file
+  :config
+  (dolist (dir '("../include" "../inc" "../source" "../src"))
+    (add-to-list 'cc-search-directories dir))
+
+  :bind
+  (nil
+   :map c-mode-map
+   ("C-c o" . ff-find-other-file)
+   :map c++-mode-map
+   ("C-c o" . ff-find-other-file)))
+
 (use-package cc-mode
   :config
-  (dolist (map '(c-mode-map c++-mode-map))
-    (bind-key "C-c o" 'ff-find-other-file map))
   (c-add-style "m5"
 	       '((c-basic-offset . 4)
                  (indent-tabs-mode . nil)
@@ -848,6 +831,8 @@
 				     (statement-case-open . 2)
 				     (access-label . -2)
 				     (innamespace . 0)))))
+  (add-to-list 'safe-local-variable-values '(c-indent-style . "m5"))
+
   :hook
   (c-mode-common-hook . (lambda ()
                           (setq-local fill-column 80)
@@ -887,6 +872,7 @@
         "hoogle -n 1024 --numbers"))
 
 (use-package tex
+  :ensure auctex
   :init
   (setq-default TeX-master nil)
   (setq TeX-auto-save t)
@@ -924,10 +910,11 @@
   :config
   (setq geiser-repl-current-project-function 'ignore))
 
-;;; init.el ends here
 (put 'narrow-to-region 'disabled nil)
 (put 'narrow-to-page 'disabled nil)
 (put 'dired-find-alternate-file 'disabled nil)
 (put 'upcase-region 'disabled nil)
 (put 'downcase-region 'disabled nil)
 (put 'magit-clean 'disabled nil)
+
+;;; init.el ends here
