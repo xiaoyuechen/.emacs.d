@@ -1,6 +1,6 @@
 ;;; denv.el --- My desktop environment configurations  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2022  Xiaoyue Chen
+;; Copyright (C) 2022, 2023  Xiaoyue Chen
 
 ;; Author: Xiaoyue Chen <xiaoyue.chen@it.uu.se>
 
@@ -72,12 +72,14 @@
         (message (desktop-environment--shell-command-to-string "autorandr --cycle"))))))
 
 (use-package exwm-systemtray
+  :ensure exwm
   :commands
   (exwm-systemtray-enable)
   :config
   (setq exwm-systemtray-icon-gap 4))
 
 (use-package exwm-randr
+  :ensure exwm
   :commands
   (exwm-randr-enable)
   :init
