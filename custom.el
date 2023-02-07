@@ -5,7 +5,7 @@
  ;; If there is more than one, they won't work right.
  '(mml-secure-openpgp-sign-with-sender t)
  '(package-selected-packages
-   '(bash-completion citeproc magit kind-icon with-editor pcmpl-args corfu marginalia eglot consult orderless vertico erlang ghub project yasnippet-snippets yasnippet flymake-racket geiser-racket racket-mode org-roam-ui eshell-vterm vterm visual-fill-column org-roam mood-line ox-reveal trashed crdt pyvenv engine-mode mu4e-alert use-package desktop-environment ednc exwm geiser-guile cdlatex lice license-templates org yaml-mode haskell-mode gitignore-mode markdown-mode auctex minizinc-mode cmake-mode which-key))
+   '(magit-section magit bash-completion citeproc kind-icon with-editor pcmpl-args corfu marginalia eglot consult orderless vertico erlang ghub project yasnippet-snippets yasnippet flymake-racket geiser-racket racket-mode org-roam-ui eshell-vterm vterm visual-fill-column org-roam mood-line ox-reveal trashed crdt pyvenv engine-mode mu4e-alert use-package desktop-environment ednc exwm geiser-guile cdlatex lice license-templates org yaml-mode haskell-mode gitignore-mode markdown-mode auctex minizinc-mode cmake-mode which-key))
  '(safe-local-variable-values '((c-indentation-style . "m5")))
  '(warning-suppress-types '((use-package))))
 (custom-set-faces

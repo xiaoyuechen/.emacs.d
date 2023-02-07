@@ -112,6 +112,10 @@
    )
 
   :init
+  ;; Set narrow key
+  (setq consult-narrow-key (kbd "<")
+        consult-widen-key (kbd ">"))
+
   ;; Use Consult to select xref locations with preview
   (setq xref-show-xrefs-function 'consult-xref
         xref-show-definitions-function 'consult-xref))
@@ -126,7 +130,8 @@
 
 (use-package recentf
   :init
-  (setq recentf-max-menu-items 100)
+  (setq recentf-max-saved-items 1000)
+  (setq recentf-keep nil)
   (recentf-mode))
 
 (use-package windmove
@@ -293,16 +298,6 @@
   :defer
   :config
   (setq ediff-window-setup-function 'ediff-setup-windows-plain))
-
-(use-package desktop
-  :init
-  (setq desktop-restore-frames nil)
-  (setq desktop-load-locked-desktop t)
-  (desktop-save-mode))
-
-(use-package mood-line
-  :config
-  (mood-line-mode))
 
 (use-package vterm
   :defer
@@ -677,15 +672,6 @@
                   (when (stringp method)
                     (member method '("su" "sudo"))))))))
 
-  (defun rename-tramp-buffer ()
-    (when (tramp-tramp-file-p buffer-file-name)
-      (let* ((tramp (tramp-dissect-file-name buffer-file-name))
-             (host (tramp-file-name-host tramp))
-             (file (file-name-nondirectory (tramp-file-name-localname tramp))))
-        (rename-buffer (generate-new-buffer-name
-                        (format "@%s: %s" host file))))))
-
-  (add-hook 'find-file-hooks 'rename-tramp-buffer)
   (add-to-list 'tramp-remote-path 'tramp-own-remote-path))
 
 (use-package flyspell
@@ -816,10 +802,17 @@
   (add-to-list 'eglot-server-programs
                '(cmake-mode . ("cmake-language-server")))
 
-  (setq-default eglot-workspace-configuration
-                '(:haskell
-                  ( :maxCompletions 50
-                    :formattingProvider "fourmolu")))
+  (add-to-list 'eglot-server-programs
+               '(haskell-mode
+                 . ("haskell-language-server-wrapper" "--lsp"
+                    :initializationOptions
+                    (:haskell
+                     ( :maxCompletions 50
+                       :formattingProvider "fourmolu")))))
+
+  (add-to-list 'eglot-server-programs
+               '((c++-mode c-mode)
+                 . ("ccls")))
 
   :hook
   (eglot-managed-mode-hook . (lambda ()
