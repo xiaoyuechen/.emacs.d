@@ -23,12 +23,23 @@
 
 ;;; Code:
 
-(setq use-package-enable-imenu-support t)
-
 (add-to-list 'command-switch-alist
              '("--denv" . (lambda (_) (load "~/.emacs.d/denv.el"))))
 
+(setq use-package-enable-imenu-support t)
+(use-package use-package
+  :init
+  (setq use-package-always-ensure t)
+  (setq use-package-hook-name-suffix nil))
+
+(use-package use-package-ensure)
+
+(use-package package
+  :config
+  (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t))
+
 (use-package emacs
+  :demand
   :init
   (setq user-full-name "Xiaoyue Chen"
         user-mail-address "xiaoyue.chen@it.uu.se")
@@ -73,16 +84,9 @@
   (minibuffer-setup-hook . cursor-intangible-mode)
   (before-save-hook . delete-trailing-whitespace))
 
-(use-package use-package
-  :init
-  (setq use-package-always-ensure t)
-  (setq use-package-hook-name-suffix nil))
-
-(use-package use-package-ensure)
-
-(use-package package
-  :config
-  (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t))
+(use-package abbrev
+  :ensure emacs
+  :delight)
 
 (use-package comint
   :ensure emacs
@@ -97,6 +101,8 @@
     (interactive)
     (call-process "xdg-open" nil 0 nil
                   (dired-get-filename nil t)))
+
+  (setq dired-listing-switches "-alh")
 
   (put 'dired-find-alternate-file 'disabled nil)
 
@@ -171,13 +177,7 @@
 
   ;; Use Consult to select xref locations with preview
   (setq xref-show-xrefs-function 'consult-xref
-        xref-show-definitions-function 'consult-xref)
-
-  :config
-  (consult-customize
-   consult--source-bookmark consult--source-file-register
-   consult--source-recent-file consult--source-project-recent-file
-   :preview-key "M-."))
+        xref-show-definitions-function 'consult-xref))
 
 (use-package consult-dir
   :bind

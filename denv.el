@@ -23,8 +23,6 @@
 
 ;;; Code:
 
-(set-face-attribute 'default nil :height 160)
-
 (defun shutdown (&optional reboot)
   (interactive "P")
   (save-some-buffers)
