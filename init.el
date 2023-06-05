@@ -40,30 +40,40 @@
 
 (use-package emacs
   :demand
+  :bind
+  ("C-c i" . scratch-buffer)
+
   :init
   (setq user-full-name "Xiaoyue Chen"
-        user-mail-address "xiaoyue.chen@it.uu.se")
+        user-mail-address "xchen@vvvu.org")
 
   (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
+  (set-face-attribute 'default nil :height 120)
   (setq x-underline-at-descent-line t)
   (setq max-mini-window-height 0.6)
   (setq split-height-threshold nil)
   (setq enable-recursive-minibuffers t)
   (setq sentence-end-double-space nil)
+  (setq max-lisp-eval-depth 12000)
+  (setq delete-by-moving-to-trash t)
+  (setq remote-file-name-inhibit-delete-by-moving-to-trash t)
   (setq require-final-newline t)
+  (setq-default fill-column 80)
   (setq-default indent-tabs-mode nil)
   (setq tab-always-indent 'complete)
-  (setq delete-by-moving-to-trash t)
   (setq comment-empty-lines t)
   (setq async-shell-command-buffer 'new-buffer)
   (setq minibuffer-prompt-properties
         '(read-only t cursor-intangible t face minibuffer-prompt))
   (setq visual-line-fringe-indicators '(left-curly-arrow right-arrow))
   (setq set-mark-command-repeat-pop t)
+  (setq initial-major-mode 'org-mode)
+  (setq initial-scratch-message "#+title: Scratch\n\n")
 
   (menu-bar-mode -1)
   (tool-bar-mode -1)
   (scroll-bar-mode -1)
+  (global-visual-line-mode)
 
   (advice-add 'async-shell-command :after
               (lambda (command &optional output-buffer error-buffer)
@@ -83,6 +93,21 @@
   :hook
   (minibuffer-setup-hook . cursor-intangible-mode)
   (before-save-hook . delete-trailing-whitespace))
+
+(use-package simple
+  :ensure emacs
+  :hook
+  (org-mode-hook . auto-fill-mode))
+
+(use-package project
+  :ensure emacs
+  :config
+  (setq project-vc-merge-submodules nil))
+
+(use-package compile
+  :ensure emacs
+  :config
+  (setq compile-command "make -k -j $(nproc)"))
 
 (use-package abbrev
   :ensure emacs
@@ -107,9 +132,8 @@
   (put 'dired-find-alternate-file 'disabled nil)
 
   :bind
-  (nil
-   :map dired-mode-map
-   ("C-c o" . xdg-open-from-dired)))
+  ( :map dired-mode-map
+    ("C-c o" . xdg-open-from-dired)))
 
 (use-package consult
   :bind
@@ -170,7 +194,24 @@
    ("M-r" . consult-history)                 ;; orig. previous-
    )
 
-  :init
+  :config
+  (defun consult-buffer-state-no-tramp ()
+    "Buffer state function that doesn't preview Tramp buffers."
+    (let ((orig-state (consult--buffer-state))
+          (filter (lambda (action cand)
+                    (if (and cand
+                             (or (eq action 'return)
+                                 (let ((buffer (get-buffer cand)))
+                                   (and buffer
+                                        (not (file-remote-p (buffer-local-value 'default-directory buffer)))))))
+                        cand
+                      nil))))
+      (lambda (action cand)
+        (funcall orig-state action (funcall filter action cand)))))
+
+  (setq consult--source-buffer
+        (plist-put consult--source-buffer :state #'consult-buffer-state-no-tramp))
+
   ;; Set narrow key
   (setq consult-narrow-key (kbd "<")
         consult-widen-key (kbd ">"))
@@ -194,11 +235,16 @@
                                         (eglot . ((styles . (orderless))))))
   (setq orderless-component-separator "[ &]"))
 
+(use-package cape
+  :hook
+  (eshell-hist-mode-hook . (lambda () (local-set-key (kbd "M-SPC") 'cape-history)))
+  (comint-mode-hook . (lambda () (local-set-key (kbd "M-SPC") 'cape-history))))
+
 (use-package delight)
 
 (use-package recentf
   :init
-  (setq recentf-max-saved-items 1000)
+  (setq recentf-max-saved-items 100)
   (setq recentf-keep nil)
   (recentf-mode))
 
@@ -263,7 +309,7 @@
            (name (if ctx (mu4e-context-name ctx))))
       (when name
         (cond
-         ((equal name "uu")
+         ((member name '("uu" "vvvu"))
           (mml-secure-sign))))))
 
   (setq mml-secure-openpgp-sign-with-sender t))
@@ -297,7 +343,7 @@
   (setq mu4e-headers-date-format "%F")
   (setq mu4e-maildir-shortcuts
         '((:maildir "/uu/Inbox" :key ?u)
-          (:maildir "/outlook/Inbox" :key ?i)))
+          (:maildir "/vvvu/Inbox" :key ?v)))
   (setq mu4e-contexts
         `(,(make-mu4e-context
             :name "uu"
@@ -314,6 +360,7 @@
               (mu4e-refile-folder . "/uu/Archive")
               (mu4e-sent-messages-behavior . sent)
               (smtpmail-smtp-server . "mail.uu.se")
+              (smtpmail-servers-requiring-authorization . "mail.uu.se")
               (smtpmail-smtp-service . 587)
               (smtpmail-stream-type . starttls)
               (mu4e-compose-signature
@@ -322,36 +369,44 @@
                          "Department of Information Technology\n"
                          "Uppsala University"))))
           ,(make-mu4e-context
-            :name "outlook"
+            :name "vvvu"
             :match-func
             (lambda (msg)
               (when msg
-                (string-match-p "^/outlook"
+                (string-match-p "^/vvvu"
                                 (mu4e-message-field msg :maildir))))
             :vars
-            '((user-mail-address . "xiaoyue_chen@outlook.com")
-              (mu4e-sent-folder . "/outlook/Sent")
-              (mu4e-drafts-folder . "/outlook/Drafts")
-              (mu4e-trash-folder . "/outlook/Deleted")
-              (mu4e-refile-folder . "/outlook/Archive")
-              (mu4e-sent-messages-behavior . delete)
-              (smtpmail-smtp-server . "smtp-mail.outlook.com")
+            '((user-mail-address . "xchen@vvvu.org")
+              (mu4e-sent-folder . "/vvvu/Sent")
+              (mu4e-drafts-folder . "/vvvu/Drafts")
+              (mu4e-trash-folder . "/vvvu/Deleted")
+              (mu4e-refile-folder . "/vvvu/Archive")
+              (mu4e-sent-messages-behavior . sent)
+              (smtpmail-smtp-server . "smtp.sendgrid.net")
+              (smtpmail-servers-requiring-authorization . "smtp.sendgrid.net")
               (smtpmail-smtp-service . 587)
               (smtpmail-stream-type . starttls)
-              (mu4e-compose-signature . t)))))
+              (mu4e-compose-signature
+               . (concat "Xiaoyue Chen\n"
+                         "VVVU: Workers, Unite!"))))))
   :bind
   (("C-c m" . mu4e)
    :map mu4e-main-mode-map
    ("q" . bury-buffer)))
 
+(use-package mu4e-icalendar
+  :ensure nil
+  :after (mu4e)
+  :config
+  (setq gnus-icalendar-org-capture-file "~/Org/ical/mail.org")
+  (setq gnus-icalendar-org-capture-headline '("Calendar"))
+
+  (mu4e-icalendar-setup)
+  (gnus-icalendar-org-setup))
+
 (use-package auth-source
   :config
   (setq auth-sources '("secrets:Login")))
-
-(use-package pyvenv
-  :config
-  (setq pyvenv-default-virtual-env-name ".pyenv")
-  (pyvenv-mode))
 
 (use-package ediff
   :defer
@@ -362,20 +417,24 @@
   :defer
   :config
   (setq vterm-buffer-name-string "*vterm %s*")
-  :bind
-  ("C-c t" . vterm))
+  (add-to-list 'vterm-tramp-shells '("ssh" "/bin/bash")))
 
 (use-package eshell-vterm
   :init
   (eshell-vterm-mode))
 
+(use-package em-hist
+  :ensure eshell
+  :hook
+  (kill-emacs-hook . eshell-save-some-history))
+
 (use-package eshell
+  :commands spawn-eshell
   :hook
   (eshell-mode-hook . rename-eshell-buffer)
   (eshell-directory-change-hook . rename-eshell-buffer)
   (eshell-expand-input-functions . eshell-expand-history-references)
-
-  :init
+  :config
   (defun spawn-eshell (display)
     "Create a frame with a dedicated Eshell window."
     (select-frame (make-frame-on-display display))
@@ -383,18 +442,29 @@
            (buffer (eshell)))
       (set-window-dedicated-p (get-buffer-window buffer) t)))
 
-  :config
+  (setenv "PAGER" "")
   (dolist (module '(eshell-tramp eshell-elecslash))
     (add-to-list 'eshell-modules-list module))
   (setq eshell-history-size 10000)
+  (defun dynamic-eshell-buffer-name ()
+    (format "*eshell: %s*"
+            (abbreviate-file-name (directory-file-name
+                                   default-directory))))
   (defun rename-eshell-buffer ()
     (unless eshell-non-interactive-p
-      (rename-buffer (format "*eshell: %s*"
-                             (abbreviate-file-name (directory-file-name
-                                                    default-directory)))
-                     t)))
+      (rename-buffer (dynamic-eshell-buffer-name))))
+  (advice-add 'eshell :around
+              (lambda (old-eshell &rest args)
+                (let ((eshell-buffer-name (dynamic-eshell-buffer-name)))
+                  (apply old-eshell args))))
   (setq eshell-destroy-buffer-when-process-dies t)
-  (dolist (command '("vim" "vifm" "nmtui" "alsamixer" "gh"))
+  :bind
+  ("C-c t" . eshell))
+
+(use-package em-term
+  :ensure eshell
+  :config
+  (dolist (command '("vim" "vifm" "nmtui" "pulsemixer" "gh"))
     (add-to-list 'eshell-visual-commands command))
   (dolist (subcommand '(("aur" "sync")))
     (add-to-list 'eshell-visual-subcommands subcommand)))
@@ -405,8 +475,7 @@
         '(pcomplete-completions-at-point)))
 
 (use-package pcmpl-args
-  :after
-  (pcomplete))
+  :after (pcomplete))
 
 (use-package bash-completion
   :hook
@@ -417,12 +486,13 @@
 
   :config
   (defun bash-completion-from-eshell ()
+    (setq-local pcomplete-default-completion-function 'ignore)
     (add-hook 'completion-at-point-functions
               (lambda ()
                 (bash-completion-dynamic-complete-nocomint
                  (save-excursion (eshell-bol) (point))
                  (point) t))
-              nil
+              10
               t)))
 
 (use-package savehist
@@ -434,11 +504,11 @@
   :init
   (which-key-mode))
 
-(use-package visual-fill-column
-  :config
-  (setq visual-fill-column-enable-sensible-window-split t)
-  :hook
-  (visual-line-mode-hook . visual-fill-column-mode))
+;; (use-package visual-fill-column
+;;   :config
+;;   (setq visual-fill-column-enable-sensible-window-split t)
+;;   :hook
+;;   (visual-line-mode-hook . visual-fill-column-mode))
 
 (use-package paren
   :config
@@ -501,12 +571,10 @@
   (file-file-hook . elide-head))
 
 (use-package org
+  :defer
   :commands
   (my-agenda)
   :hook
-  (org-mode-hook . (lambda ()
-                     (setq-local fill-column 80)
-                     (visual-line-mode)))
   (mu4e-compose-mode-hook . turn-on-orgtbl)
 
   :init
@@ -554,24 +622,25 @@
           ("reading" . ?r)
           ("meeting" . ?m)
           ("errand" . ?e)))
-  (setq org-capture-templates
-        (mapcar
-         (lambda (config)
-           `(,(plist-get config 'key)
-             ,(plist-get config 'description)
-             entry
-             (file ,(expand-file-name (plist-get config 'file)
-                                      org-notes-directory))
-             ,(org-template-arg (plist-get config 'template))
-             :empty-lines 1))
-         '(( key "t"
-             description "Task"
-             file "tasks.org"
-             template "task")
-           ( key "f"
-             description "Fleeting note"
-             file "notes.org"
-             template "note"))))
+
+  (dolist (template (mapcar
+                     (lambda (config)
+                       `(,(plist-get config 'key)
+                         ,(plist-get config 'description)
+                         entry
+                         (file ,(expand-file-name (plist-get config 'file)
+                                                  org-notes-directory))
+                         ,(org-template-arg (plist-get config 'template))
+                         :empty-lines 1))
+                     '(( key "t"
+                         description "Task"
+                         file "tasks.org"
+                         template "task")
+                       ( key "f"
+                         description "Fleeting note"
+                         file "notes.org"
+                         template "note"))))
+    (add-to-list 'org-capture-templates template))
   (setq org-fast-tag-selection-single-key 'expert)
   (org-babel-do-load-languages
    'org-babel-load-languages
@@ -581,6 +650,7 @@
      (python . t)
      (bibtex . nil)))
   (setq org-confirm-babel-evaluate nil)
+  (setq org-babel-C++-compiler "g++ -O3 -std=c++20")
   (setq org-cite-csl-styles-dir "~/Repos/csl-styles")
   (dolist (module '(org-id org-attach oc-biblatex oc-csl ox-reveal))
     (add-to-list 'org-modules module))
@@ -595,6 +665,17 @@
    ("C-c p" . org-capture)
    :map dired-mode-map
    ("C-c C-x a" . org-attach-dired-to-subtree)))
+
+(use-package ox-latex
+  :ensure org
+  :defer
+  :config
+  (add-to-list 'org-latex-classes
+               '("IEEEtran" "\\documentclass[conference,compsoc]{IEEEtran}"
+                 ("\\section{%s}" . "\\section*{%s}")
+                 ("\\subsection{%s}" . "\\subsection*{%s}")
+                 ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+                 ("\\paragraph{%s}" . "\\paragraph*{%s}"))))
 
 (use-package ox-reveal
   :defer
@@ -669,23 +750,17 @@
 (use-package tramp
   :defer
   :config
-  (setq backup-enable-predicate
-        (lambda (name)
-          (and (normal-backup-enable-predicate name)
-               (not
-                (let ((method (file-remote-p name 'method)))
-                  (when (stringp method)
-                    (member method '("su" "sudo"))))))))
-
-  (add-to-list 'tramp-remote-path 'tramp-own-remote-path))
+  (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
+  (setq remote-file-name-inhibit-locks t)
+  (remove-hook 'tramp-cleanup-connection-hook #'tramp-recentf-cleanup)
+  (remove-hook 'tramp-cleanup-all-connections-hook #'tramp-recentf-cleanup-all))
 
 (use-package flyspell
   :delight
   :bind
-  (nil
-   :map flyspell-mode-map
-   ("C-." . nil)
-   ("C-M-i" . nil))
+  ( :map flyspell-mode-map
+    ("C-." . nil)
+    ("C-M-i" . nil))
   :hook
   ((text-mode-hook . flyspell-mode)
    (prog-mode-hook . flyspell-prog-mode)))
@@ -711,7 +786,7 @@
   (corfu-auto-delay 0)
   (corfu-auto-prefix 3)
   (corfu-separator ?\&)          ;; Orderless field separator
-  (corfu-popupinfo-delay t)
+  (corfu-popupinfo-delay '(0 . 0))
 
   :init
   (defun corfu-enable-always-in-minibuffer ()
@@ -731,14 +806,17 @@
   (corfu-history-mode)
 
   :bind
-  (:map corfu-map ("M-SPC" . corfu-insert-separator))
+  ( :map corfu-map
+    ("M-SPC" . corfu-insert-separator))
 
   :hook
   (eshell-mode-hook . (lambda ()
+                        (setq-local corfu-auto nil)))
+  (comint-mode-hook . (lambda ()
                         (setq-local corfu-auto nil))))
 
 (use-package kind-icon
-  :after corfu
+  :after (corfu)
   :custom
   (kind-icon-default-face 'corfu-default) ; to compute blended backgrounds correctly
   (kind-icon-default-style
@@ -803,10 +881,6 @@
                      ( :maxCompletions 50
                        :formattingProvider "fourmolu")))))
 
-  (add-to-list 'eglot-server-programs
-               '((c++-mode c-mode)
-                 . ("ccls")))
-
   :hook
   (eglot-managed-mode-hook . (lambda ()
                                (setq-local eldoc-documentation-strategy
@@ -818,11 +892,10 @@
     (add-to-list 'cc-search-directories dir))
 
   :bind
-  (nil
-   :map c-mode-map
-   ("C-c o" . ff-find-other-file)
-   :map c++-mode-map
-   ("C-c o" . ff-find-other-file)))
+  ( :map c-mode-map
+    ("C-c o" . ff-find-other-file)
+    :map c++-mode-map
+    ("C-c o" . ff-find-other-file)))
 
 (use-package cc-mode
   :config
@@ -893,12 +966,11 @@
   :config
   (add-to-list 'TeX-view-program-selection '(output-pdf "xdg-open"))
   :bind
-  (nil
-   :map TeX-mode-map
-   ("C-c c" . (lambda ()
-                (interactive)
-                (save-buffer)
-                (TeX-command-run-all nil))))
+  ( :map TeX-mode-map
+    ("C-c c" . (lambda ()
+                 (interactive)
+                 (save-buffer)
+                 (TeX-command-run-all nil))))
   :hook
   (LaTeX-mode-hook . (lambda ()
                        (turn-on-reftex)
@@ -921,5 +993,44 @@
   :defer
   :config
   (setq geiser-repl-current-project-function 'ignore))
+
+(use-package trashed
+  :defer)
+
+(use-package gnuplot
+  :defer
+  :mode ("\\.gpi?\\'" . gnuplot-mode)
+  :interpreter ("gnuplot" . gnuplot-mode))
+
+(use-package csv-mode
+  :defer
+  :hook
+  (csv-mode-hook . csv-align-mode)
+  (csv-mode-hook . csv-guess-set-separator))
+
+(use-package nix-mode
+  :bind
+  ("C-c f" . nix-flake))
+
+(use-package envrc
+  :init
+  (envrc-global-mode)
+  :bind
+  ( :map envrc-mode-map
+    ("C-c e" . 'envrc-command-map)))
+
+(use-package org-ai
+  :hook
+  (org-mode-hook . org-ai-mode)
+  :init
+  (org-ai-global-mode)
+  :config
+  (org-ai-install-yasnippets)
+  (setq org-element-use-cache nil))
+
+(use-package markdown-mode
+  :defer
+  :init
+  (setq markdown-fontify-code-blocks-natively t))
 
 ;;; init.el ends here
