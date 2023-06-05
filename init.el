@@ -54,7 +54,6 @@
   (setq split-height-threshold nil)
   (setq enable-recursive-minibuffers t)
   (setq sentence-end-double-space nil)
-  (setq max-lisp-eval-depth 12000)
   (setq delete-by-moving-to-trash t)
   (setq remote-file-name-inhibit-delete-by-moving-to-trash t)
   (setq require-final-newline t)
