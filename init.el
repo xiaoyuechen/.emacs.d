@@ -54,6 +54,7 @@
   (setq split-height-threshold nil)
   (setq enable-recursive-minibuffers t)
   (setq sentence-end-double-space nil)
+  (setq auto-save-file-name-transforms nil)
   (setq delete-by-moving-to-trash t)
   (setq remote-file-name-inhibit-delete-by-moving-to-trash t)
   (setq require-final-newline t)
@@ -245,6 +246,7 @@
   :init
   (setq recentf-max-saved-items 100)
   (setq recentf-keep nil)
+  (setq recentf-exclude '(":[0-9],D?S"))
   (recentf-mode))
 
 (use-package windmove
@@ -451,7 +453,7 @@
                                    default-directory))))
   (defun rename-eshell-buffer ()
     (unless eshell-non-interactive-p
-      (rename-buffer (dynamic-eshell-buffer-name))))
+      (rename-buffer (dynamic-eshell-buffer-name) t)))
   (advice-add 'eshell :around
               (lambda (old-eshell &rest args)
                 (let ((eshell-buffer-name (dynamic-eshell-buffer-name)))
@@ -759,10 +761,7 @@
   :bind
   ( :map flyspell-mode-map
     ("C-." . nil)
-    ("C-M-i" . nil))
-  :hook
-  ((text-mode-hook . flyspell-mode)
-   (prog-mode-hook . flyspell-prog-mode)))
+    ("C-M-i" . nil)))
 
 (use-package flymake
   :bind
