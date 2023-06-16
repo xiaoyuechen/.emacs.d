@@ -23,16 +23,11 @@
 
 ;;; Code:
 
-(add-to-list 'command-switch-alist
-             '("--denv" . (lambda (_) (load "~/.emacs.d/denv.el"))))
-
 (setq use-package-enable-imenu-support t)
 (use-package use-package
   :init
-  (setq use-package-always-ensure t)
+  (setq use-package-always-defer t)
   (setq use-package-hook-name-suffix nil))
-
-(use-package use-package-ensure)
 
 (use-package package
   :config
@@ -48,7 +43,7 @@
         user-mail-address "xchen@vvvu.org")
 
   (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
-  (set-face-attribute 'default nil :height 120)
+  (set-face-attribute 'default nil :height 140)
   (setq x-underline-at-descent-line t)
   (setq max-mini-window-height 0.6)
   (setq split-height-threshold nil)
@@ -58,7 +53,6 @@
   (setq delete-by-moving-to-trash t)
   (setq remote-file-name-inhibit-delete-by-moving-to-trash t)
   (setq require-final-newline t)
-  (setq-default fill-column 80)
   (setq-default indent-tabs-mode nil)
   (setq tab-always-indent 'complete)
   (setq comment-empty-lines t)
@@ -73,7 +67,6 @@
   (menu-bar-mode -1)
   (tool-bar-mode -1)
   (scroll-bar-mode -1)
-  (global-visual-line-mode)
 
   (advice-add 'async-shell-command :after
               (lambda (command &optional output-buffer error-buffer)
@@ -95,32 +88,26 @@
   (before-save-hook . delete-trailing-whitespace))
 
 (use-package simple
-  :ensure emacs
   :hook
   (org-mode-hook . auto-fill-mode))
 
 (use-package project
-  :ensure emacs
   :config
   (setq project-vc-merge-submodules nil))
 
 (use-package compile
-  :ensure emacs
   :config
   (setq compile-command "make -k -j $(nproc)"))
 
 (use-package abbrev
-  :ensure emacs
   :delight)
 
 (use-package comint
-  :ensure emacs
   :config
   (setq comint-prompt-read-only t
         comint-buffer-maximum-size 20000))
 
 (use-package dired
-  :ensure emacs
   :config
   (defun xdg-open-from-dired ()
     (interactive)
@@ -136,6 +123,7 @@
     ("C-c o" . xdg-open-from-dired)))
 
 (use-package consult
+  :ensure t
   :bind
   (;; C-c bindings (mode-specific-map)
    ("C-c h" . consult-history)
@@ -195,23 +183,6 @@
    )
 
   :config
-  (defun consult-buffer-state-no-tramp ()
-    "Buffer state function that doesn't preview Tramp buffers."
-    (let ((orig-state (consult--buffer-state))
-          (filter (lambda (action cand)
-                    (if (and cand
-                             (or (eq action 'return)
-                                 (let ((buffer (get-buffer cand)))
-                                   (and buffer
-                                        (not (file-remote-p (buffer-local-value 'default-directory buffer)))))))
-                        cand
-                      nil))))
-      (lambda (action cand)
-        (funcall orig-state action (funcall filter action cand)))))
-
-  (setq consult--source-buffer
-        (plist-put consult--source-buffer :state #'consult-buffer-state-no-tramp))
-
   ;; Set narrow key
   (setq consult-narrow-key (kbd "<")
         consult-widen-key (kbd ">"))
@@ -221,6 +192,7 @@
         xref-show-definitions-function 'consult-xref))
 
 (use-package consult-dir
+  :ensure t
   :bind
   (("C-x C-d" . consult-dir)
    :map vertico-map
@@ -228,6 +200,7 @@
    ("C-x C-j" . consult-dir-jump-file)))
 
 (use-package orderless
+  :ensure t
   :init
   (setq completion-styles '(orderless basic)
         completion-category-defaults nil
@@ -236,24 +209,27 @@
   (setq orderless-component-separator "[ &]"))
 
 (use-package cape
+  :ensure t
   :hook
   (eshell-hist-mode-hook . (lambda () (local-set-key (kbd "M-SPC") 'cape-history)))
   (comint-mode-hook . (lambda () (local-set-key (kbd "M-SPC") 'cape-history))))
 
-(use-package delight)
+(use-package delight
+  :ensure t)
 
 (use-package recentf
   :init
+  (recentf-mode)
+  :config
   (setq recentf-max-saved-items 100)
-  (setq recentf-keep nil)
-  (setq recentf-exclude '(":[0-9],D?S"))
-  (recentf-mode))
+  (setq recentf-exclude '(":[0-9],D?S")))
 
 (use-package windmove
   :config
   (windmove-default-keybindings '(meta shift)))
 
 (use-package engine-mode
+  :ensure t
   :init
   (engine-mode)
   :config
@@ -278,7 +254,6 @@
     :keybinding "t"))
 
 (use-package calendar
-  :defer
   :config
   (setq calendar-week-start-day 1
         calendar-intermonth-text
@@ -293,9 +268,11 @@
                     'font-lock-face 'font-lock-keyword-face)))
 
 (use-package mu4e-alert
+  :ensure t
   :init
-  ;; (setq mu4e-alert-email-notification-types '(count subjects))
-  ;; (mu4e-alert-set-default-style 'notifications)
+  (mu4e-alert-set-default-style 'notifications)
+  :config
+  (setq mu4e-alert-email-notification-types '(count subjects))
   :hook
   ;; (after-init-hook . mu4e-alert-enable-notifications)
   (after-init-hook . mu4e-alert-enable-mode-line-display))
@@ -317,7 +294,6 @@
 
 (use-package mu4e
   :ensure nil
-  :demand
   :hook
   (dired-mode-hook . turn-on-gnus-dired-mode)
   (after-init-hook . (lambda ()
@@ -347,6 +323,27 @@
           (:maildir "/vvvu/Inbox" :key ?v)))
   (setq mu4e-contexts
         `(,(make-mu4e-context
+            :name "vvvu"
+            :match-func
+            (lambda (msg)
+              (when msg
+                (string-match-p "^/vvvu"
+                                (mu4e-message-field msg :maildir))))
+            :vars
+            '((user-mail-address . "xchen@vvvu.org")
+              (mu4e-sent-folder . "/vvvu/Sent")
+              (mu4e-drafts-folder . "/vvvu/Drafts")
+              (mu4e-trash-folder . "/vvvu/Deleted")
+              (mu4e-refile-folder . "/vvvu/Archive")
+              (mu4e-sent-messages-behavior . sent)
+              (smtpmail-smtp-server . "smtp.sendgrid.net")
+              (smtpmail-servers-requiring-authorization . "smtp.sendgrid.net")
+              (smtpmail-smtp-service . 587)
+              (smtpmail-stream-type . starttls)
+              (mu4e-compose-signature
+               . (concat "Xiaoyue Chen\n"
+                         "VVVU: Workers, Unite!"))))
+          ,(make-mu4e-context
             :name "uu"
             :match-func
             (lambda (msg)
@@ -368,28 +365,7 @@
                . (concat "Xiaoyue Chen, PhD Student\n"
                          "Division of Computer Systems\n"
                          "Department of Information Technology\n"
-                         "Uppsala University"))))
-          ,(make-mu4e-context
-            :name "vvvu"
-            :match-func
-            (lambda (msg)
-              (when msg
-                (string-match-p "^/vvvu"
-                                (mu4e-message-field msg :maildir))))
-            :vars
-            '((user-mail-address . "xchen@vvvu.org")
-              (mu4e-sent-folder . "/vvvu/Sent")
-              (mu4e-drafts-folder . "/vvvu/Drafts")
-              (mu4e-trash-folder . "/vvvu/Deleted")
-              (mu4e-refile-folder . "/vvvu/Archive")
-              (mu4e-sent-messages-behavior . sent)
-              (smtpmail-smtp-server . "smtp.sendgrid.net")
-              (smtpmail-servers-requiring-authorization . "smtp.sendgrid.net")
-              (smtpmail-smtp-service . 587)
-              (smtpmail-stream-type . starttls)
-              (mu4e-compose-signature
-               . (concat "Xiaoyue Chen\n"
-                         "VVVU: Workers, Unite!"))))))
+                         "Uppsala University"))))))
   :bind
   (("C-c m" . mu4e)
    :map mu4e-main-mode-map
@@ -410,32 +386,24 @@
   (setq auth-sources '("secrets:Login")))
 
 (use-package ediff
-  :defer
   :config
   (setq ediff-window-setup-function 'ediff-setup-windows-plain))
 
 (use-package vterm
-  :defer
+  :ensure t
   :config
   (setq vterm-buffer-name-string "*vterm %s*")
   (add-to-list 'vterm-tramp-shells '("ssh" "/bin/bash")))
 
 (use-package eshell-vterm
+  :ensure t
   :init
   (eshell-vterm-mode))
 
-(use-package em-hist
-  :ensure eshell
-  :hook
-  (kill-emacs-hook . eshell-save-some-history))
-
 (use-package eshell
-  :commands spawn-eshell
-  :hook
-  (eshell-mode-hook . rename-eshell-buffer)
-  (eshell-directory-change-hook . rename-eshell-buffer)
-  (eshell-expand-input-functions . eshell-expand-history-references)
+  :commands (spawn-eshell)
   :config
+  (setq eshell-plain-echo-behavior t)
   (defun spawn-eshell (display)
     "Create a frame with a dedicated Eshell window."
     (select-frame (make-frame-on-display display))
@@ -459,69 +427,63 @@
                 (let ((eshell-buffer-name (dynamic-eshell-buffer-name)))
                   (apply old-eshell args))))
   (setq eshell-destroy-buffer-when-process-dies t)
-  :bind
-  ("C-c t" . eshell))
 
-(use-package em-term
-  :ensure eshell
-  :config
   (dolist (command '("vim" "vifm" "nmtui" "pulsemixer" "gh"))
     (add-to-list 'eshell-visual-commands command))
   (dolist (subcommand '(("aur" "sync")))
-    (add-to-list 'eshell-visual-subcommands subcommand)))
+    (add-to-list 'eshell-visual-subcommands subcommand))
 
-(use-package pcomplete
-  :init
-  (setq shell-dynamic-complete-functions
-        '(pcomplete-completions-at-point)))
+  :hook
+  (eshell-mode-hook . rename-eshell-buffer)
+  (eshell-directory-change-hook . rename-eshell-buffer)
+  (eshell-expand-input-functions . eshell-expand-history-references)
+
+  :bind
+  ("C-c t" . eshell))
 
 (use-package pcmpl-args
+  :ensure t
   :after (pcomplete))
 
 (use-package bash-completion
-  :hook
-  (eshell-mode-hook . bash-completion-from-eshell)
-
+  :ensure t
   :init
   (add-to-list 'shell-dynamic-complete-functions 'bash-completion-dynamic-complete)
-
-  :config
-  (defun bash-completion-from-eshell ()
-    (setq-local pcomplete-default-completion-function 'ignore)
-    (add-hook 'completion-at-point-functions
-              (lambda ()
-                (bash-completion-dynamic-complete-nocomint
-                 (save-excursion (eshell-bol) (point))
-                 (point) t))
-              10
-              t)))
+  :hook
+  (eshell-mode-hook
+   . (lambda ()
+       (add-hook 'completion-at-point-functions
+                 #'bash-completion-capf-nonexclusive nil t))))
 
 (use-package savehist
   :init
   (savehist-mode))
 
 (use-package which-key
+  :ensure t
   :delight
   :init
   (which-key-mode))
 
-;; (use-package visual-fill-column
-;;   :config
-;;   (setq visual-fill-column-enable-sensible-window-split t)
-;;   :hook
-;;   (visual-line-mode-hook . visual-fill-column-mode))
+(use-package visual-fill-column
+  :ensure t
+  :config
+  (setq visual-fill-column-enable-sensible-window-split t)
+  :hook
+  (visual-line-mode-hook . visual-fill-column-mode))
 
 (use-package paren
+  :init
+  (show-paren-mode)
   :config
-  (setq show-paren-delay 0)
-  (show-paren-mode))
+  (setq show-paren-delay 0))
 
 (use-package elec-pair
-  :config
+  :init
   (electric-pair-mode))
 
 (use-package delsel
-  :config
+  :init
   (delete-selection-mode))
 
 (use-package ibuffer
@@ -531,7 +493,6 @@
   (("C-x C-b" . ibuffer)))
 
 (use-package imenu
-  :defer
   :config
   (setq imenu-auto-rescan t))
 
@@ -540,7 +501,6 @@
   (("C-c c" . compile)))
 
 (use-package gdb-mi
-  :defer
   :config
   (setq gdb-many-windows t))
 
@@ -548,10 +508,17 @@
   :config
   (global-auto-revert-mode))
 
-(use-package lice)
+(use-package lice
+  :ensure t)
+
+(use-package license-templates
+  :ensure t)
 
 (use-package autoinsert
   :init
+  (auto-insert-mode)
+
+  :config
   (let ((insert-lice (lambda () (lice lice:default-license)
                        (insert "\n")))
         (c-header-condition
@@ -559,37 +526,29 @@
         (c-source-condition
          '("\\.\\([Cc]\\|cc\\|cpp\\|cxx\\|c\\+\\+\\)\\'" . "C / C++ program")))
     (define-auto-insert c-header-condition insert-lice)
-    (define-auto-insert c-source-condition insert-lice))
-  :config
-  (auto-insert-mode))
+    (define-auto-insert c-source-condition insert-lice)))
 
 (use-package copyright
   :hook
   (before-save-hook . copyright-update))
 
-(use-package elide-head
-  :hook
-  (file-file-hook . elide-head))
+;; (use-package elide-head
+;;   :hook
+;;   (find-file-hook . elide-head-mode))
 
 (use-package org
-  :defer
   :commands
   (my-agenda)
   :hook
   (mu4e-compose-mode-hook . turn-on-orgtbl)
 
-  :init
+  :config
   (setq org-directory "~/Org")
-  (setq org-notes-directory (expand-file-name "notes" org-directory))
   (setq org-template-directory (expand-file-name "templates" org-directory))
+  (setq org-notes-directory (expand-file-name "notes" org-directory))
   (setq org-default-notes-file (expand-file-name "notes" org-notes-directory))
   (setq org-agenda-files (expand-file-name "agenda-file-list" org-directory))
   (setq org-babel-tangle-use-relative-file-links nil)
-  (defun org-template-arg (name)
-    (when name
-      `(file ,(expand-file-name name org-template-directory))))
-
-  :config
   (setq org-cite-global-bibliography
         (list (expand-file-name "ca.bib"
                                 (expand-file-name "bib" org-directory))))
@@ -623,25 +582,6 @@
           ("reading" . ?r)
           ("meeting" . ?m)
           ("errand" . ?e)))
-
-  (dolist (template (mapcar
-                     (lambda (config)
-                       `(,(plist-get config 'key)
-                         ,(plist-get config 'description)
-                         entry
-                         (file ,(expand-file-name (plist-get config 'file)
-                                                  org-notes-directory))
-                         ,(org-template-arg (plist-get config 'template))
-                         :empty-lines 1))
-                     '(( key "t"
-                         description "Task"
-                         file "tasks.org"
-                         template "task")
-                       ( key "f"
-                         description "Fleeting note"
-                         file "notes.org"
-                         template "note"))))
-    (add-to-list 'org-capture-templates template))
   (setq org-fast-tag-selection-single-key 'expert)
   (org-babel-do-load-languages
    'org-babel-load-languages
@@ -660,6 +600,39 @@
     (interactive)
     (org-agenda nil "n"))
 
+  (require 'ox-latex)
+  (add-to-list 'org-latex-classes
+               '("IEEEtran" "\\documentclass[conference,compsoc]{IEEEtran}"
+                 ("\\section{%s}" . "\\section*{%s}")
+                 ("\\subsection{%s}" . "\\subsection*{%s}")
+                 ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+                 ("\\paragraph{%s}" . "\\paragraph*{%s}")))
+  (setq org-startup-with-latex-preview t)
+  (plist-put org-format-latex-options :scale 2)
+
+  (require 'org-capture)
+  (defun org-template-arg (name)
+    (when name
+      `(file ,(expand-file-name name org-template-directory))))
+  (dolist (template (mapcar
+                     (lambda (config)
+                       `(,(plist-get config 'key)
+                         ,(plist-get config 'description)
+                         entry
+                         (file ,(expand-file-name (plist-get config 'file)
+                                                  org-notes-directory))
+                         ,(org-template-arg (plist-get config 'template))
+                         :empty-lines 1))
+                     '(( key "t"
+                         description "Task"
+                         file "tasks.org"
+                         template "task")
+                       ( key "f"
+                         description "Fleeting note"
+                         file "notes.org"
+                         template "note"))))
+    (add-to-list 'org-capture-templates template))
+
   :bind
   (("C-c l" . org-store-link)
    ("C-c a" . my-agenda)
@@ -667,24 +640,14 @@
    :map dired-mode-map
    ("C-c C-x a" . org-attach-dired-to-subtree)))
 
-(use-package ox-latex
-  :ensure org
-  :defer
-  :config
-  (add-to-list 'org-latex-classes
-               '("IEEEtran" "\\documentclass[conference,compsoc]{IEEEtran}"
-                 ("\\section{%s}" . "\\section*{%s}")
-                 ("\\subsection{%s}" . "\\subsection*{%s}")
-                 ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
-                 ("\\paragraph{%s}" . "\\paragraph*{%s}"))))
-
 (use-package ox-reveal
-  :defer
+  :ensure t
+  :after org
   :config
   (setq org-reveal-root "https://cdn.jsdelivr.net/npm/reveal.js"))
 
 (use-package org-roam
-  :defer
+  :ensure t
   :init
   (setq org-roam-directory (expand-file-name "roam" org-directory))
   :config
@@ -736,11 +699,12 @@
   ("C-c r b" . org-roam-buffer-toggle))
 
 (use-package org-roam-ui
-  :defer
+  :ensure t
   :init
   (setq org-roam-ui-open-on-start nil))
 
 (use-package vertico
+  :ensure t
   :init
   (vertico-mode))
 
@@ -749,7 +713,6 @@
   (ffap-bindings))
 
 (use-package tramp
-  :defer
   :config
   (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
   (setq remote-file-name-inhibit-locks t)
@@ -779,6 +742,7 @@
   (eldoc-add-command 'c-electric-paren))
 
 (use-package corfu
+  :ensure t
   :custom
   (corfu-auto t)                 ;; Enable auto completion
   (corfu-auto-delay 0)
@@ -814,6 +778,7 @@
                         (setq-local corfu-auto nil))))
 
 (use-package kind-icon
+  :ensure t
   :after (corfu)
   :custom
   (kind-icon-default-face 'corfu-default) ; to compute blended backgrounds correctly
@@ -823,6 +788,7 @@
   (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
 
 (use-package marginalia
+  :ensure t
   :init
   (marginalia-mode)
   :bind
@@ -830,7 +796,7 @@
     ("M-A" . marginalia-cycle)))
 
 (use-package racket-mode
-  :defer
+  :ensure t
   :hook
   (racket-mode-hook . racket-xp-mode)
   (racket-xp-mode-hook
@@ -841,12 +807,12 @@
 
 
 (use-package scheme
-  :defer
   :init
   (setq auto-mode-alist
         (remove '("\\.rkt\\'" . scheme-mode) auto-mode-alist)))
 
 (use-package yasnippet
+  :ensure t
   :delight yas-minor-mode
   :init
   (yas-global-mode))
@@ -858,8 +824,9 @@
 
 (use-package which-func
   :init
-  (setq which-func-modes '(c-mode c++-mode))
-  (which-function-mode))
+  (which-function-mode)
+  :config
+  (setq which-func-modes '(c-mode c++-mode)))
 
 (use-package eglot
   :bind
@@ -920,6 +887,7 @@
                           (c-toggle-electric-state -1))))
 
 (use-package minizinc-mode
+  :ensure t
   :mode
   "\\.mzn\\'")
 
@@ -938,6 +906,7 @@
   (setq verilog-linter "verilator --lint-only -Wall"))
 
 (use-package haskell-mode
+  :ensure t
   :bind
   ( :map haskell-mode-map
     ("C-c C" . haskell-compile)
@@ -951,7 +920,7 @@
 
 (use-package tex
   :ensure auctex
-  :init
+  :config
   (setq-default TeX-master nil)
   (setq TeX-auto-save t)
   (setq TeX-parse-self t)
@@ -961,7 +930,7 @@
   (setq LaTeX-electric-left-right-brace t)
   (setq reftex-plug-into-AUCTeX t)
   (setq prettify-symbols-unprettify-at-point t)
-  :config
+
   (add-to-list 'TeX-view-program-selection '(output-pdf "xdg-open"))
   :bind
   ( :map TeX-mode-map
@@ -978,39 +947,40 @@
                        (TeX-source-correlate-mode))))
 
 (use-package vc
-  :defer
-  :init
+  :config
   (setq vc-follow-symlinks t))
 
 (use-package magit
-  :defer
+  :ensure t
   :config
   (put 'magit-clean 'disabled nil))
 
 (use-package geiser
-  :defer
+  :ensure t
   :config
   (setq geiser-repl-current-project-function 'ignore))
 
 (use-package trashed
-  :defer)
+  :ensure t)
 
 (use-package gnuplot
-  :defer
+  :ensure t
   :mode ("\\.gpi?\\'" . gnuplot-mode)
   :interpreter ("gnuplot" . gnuplot-mode))
 
 (use-package csv-mode
-  :defer
+  :ensure t
   :hook
   (csv-mode-hook . csv-align-mode)
   (csv-mode-hook . csv-guess-set-separator))
 
 (use-package nix-mode
+  :ensure t
   :bind
   ("C-c f" . nix-flake))
 
 (use-package envrc
+  :ensure t
   :init
   (envrc-global-mode)
   :bind
@@ -1018,17 +988,22 @@
     ("C-c e" . 'envrc-command-map)))
 
 (use-package org-ai
+  :ensure t
   :hook
   (org-mode-hook . org-ai-mode)
-  :init
-  (org-ai-global-mode)
   :config
   (org-ai-install-yasnippets)
   (setq org-element-use-cache nil))
 
 (use-package markdown-mode
-  :defer
-  :init
+  :ensure t
+  :config
   (setq markdown-fontify-code-blocks-natively t))
+
+(use-package erlang
+  :ensure t)
+
+(use-package swift-mode
+  :ensure t)
 
 ;;; init.el ends here
