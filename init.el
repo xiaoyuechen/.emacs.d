@@ -26,8 +26,7 @@
 (setq use-package-enable-imenu-support t)
 (use-package use-package
   :init
-  (setq use-package-always-defer t)
-  (setq use-package-hook-name-suffix nil))
+  (setq use-package-always-defer t))
 
 (use-package package
   :config
@@ -84,12 +83,12 @@
   (put 'narrow-to-page 'disabled nil)
 
   :hook
-  (minibuffer-setup-hook . cursor-intangible-mode)
-  (before-save-hook . delete-trailing-whitespace))
+  (minibuffer-setup . cursor-intangible-mode)
+  (before-save . delete-trailing-whitespace))
 
 (use-package simple
   :hook
-  (org-mode-hook . auto-fill-mode))
+  (org-mode . auto-fill-mode))
 
 (use-package project
   :config
@@ -211,8 +210,8 @@
 (use-package cape
   :ensure t
   :hook
-  (eshell-hist-mode-hook . (lambda () (local-set-key (kbd "M-SPC") 'cape-history)))
-  (comint-mode-hook . (lambda () (local-set-key (kbd "M-SPC") 'cape-history))))
+  (eshell-hist-mode . (lambda () (local-set-key (kbd "M-SPC") 'cape-history)))
+  (comint-mode . (lambda () (local-set-key (kbd "M-SPC") 'cape-history))))
 
 (use-package delight
   :ensure t)
@@ -274,13 +273,13 @@
   :config
   (setq mu4e-alert-email-notification-types '(count subjects))
   :hook
-  ;; (after-init-hook . mu4e-alert-enable-notifications)
-  (after-init-hook . mu4e-alert-enable-mode-line-display))
+  ;; (after-init . mu4e-alert-enable-notifications)
+  (after-init . mu4e-alert-enable-mode-line-display))
 
 (use-package gnus
   :hook
-  (mu4e-compose-mode-hook . sign-mail)
-  (dired-mode-hook . turn-on-gnus-dired-mode)
+  (mu4e-compose-mode . sign-mail)
+  (dired-mode . turn-on-gnus-dired-mode)
   :config
   (defun sign-mail ()
     (let* ((ctx (mu4e-context-current))
@@ -295,9 +294,8 @@
 (use-package mu4e
   :ensure nil
   :hook
-  (dired-mode-hook . turn-on-gnus-dired-mode)
-  (after-init-hook . (lambda ()
-                       (mu4e-update-mail-and-index t)))
+  (dired-mode . turn-on-gnus-dired-mode)
+  (after-init . (lambda () (mu4e-update-mail-and-index t)))
   :config
   (setq mu4e-update-interval 300)
   (setq mail-user-agent 'mu4e-user-agent)
@@ -434,9 +432,9 @@
     (add-to-list 'eshell-visual-subcommands subcommand))
 
   :hook
-  (eshell-mode-hook . rename-eshell-buffer)
-  (eshell-directory-change-hook . rename-eshell-buffer)
-  (eshell-expand-input-functions . eshell-expand-history-references)
+  (eshell-mode . rename-eshell-buffer)
+  (eshell-directory-change . rename-eshell-buffer)
+  (eshell-expand-input . eshell-expand-history-references)
 
   :bind
   ("C-c t" . eshell))
@@ -450,7 +448,7 @@
   :init
   (add-to-list 'shell-dynamic-complete-functions 'bash-completion-dynamic-complete)
   :hook
-  (eshell-mode-hook
+  (eshell-mode
    . (lambda ()
        (add-hook 'completion-at-point-functions
                  #'bash-completion-capf-nonexclusive nil t))))
@@ -470,7 +468,7 @@
   :config
   (setq visual-fill-column-enable-sensible-window-split t)
   :hook
-  (visual-line-mode-hook . visual-fill-column-mode))
+  (visual-line-mode . visual-fill-column-mode))
 
 (use-package paren
   :init
@@ -530,17 +528,17 @@
 
 (use-package copyright
   :hook
-  (before-save-hook . copyright-update))
+  (before-save . copyright-update))
 
-;; (use-package elide-head
-;;   :hook
-;;   (find-file-hook . elide-head-mode))
+(use-package elide-head
+  :hook
+  (find-file . elide-head-mode))
 
 (use-package org
   :commands
   (my-agenda)
   :hook
-  (mu4e-compose-mode-hook . turn-on-orgtbl)
+  (mu4e-compose-mode . turn-on-orgtbl)
 
   :config
   (setq org-directory "~/Org")
@@ -669,9 +667,9 @@
                         ,(format
                           (concat "#+title: ${title}\n"
                                   "#+filetags: :%s:\n")
-                                 (mapconcat 'identity
-                                            (plist-get config 'tags)
-                                            ":")))
+                          (mapconcat 'identity
+                                     (plist-get config 'tags)
+                                     ":")))
              :unnarrowed t
              :empty-lines 1))
          `(( key "l"
@@ -732,7 +730,7 @@
     ("M-g n" . flymake-goto-next-error)
     ("M-g p" . flymake-goto-prev-error))
   :hook
-  (emacs-lisp-mode-hook . flymake-mode))
+  (emacs-lisp-mode . flymake-mode))
 
 (use-package eldoc
   :delight
@@ -772,10 +770,8 @@
     ("M-SPC" . corfu-insert-separator))
 
   :hook
-  (eshell-mode-hook . (lambda ()
-                        (setq-local corfu-auto nil)))
-  (comint-mode-hook . (lambda ()
-                        (setq-local corfu-auto nil))))
+  (eshell-mode . (lambda () (setq-local corfu-auto nil)))
+  (comint-mode . (lambda () (setq-local corfu-auto nil))))
 
 (use-package kind-icon
   :ensure t
@@ -798,8 +794,8 @@
 (use-package racket-mode
   :ensure t
   :hook
-  (racket-mode-hook . racket-xp-mode)
-  (racket-xp-mode-hook
+  (racket-mode . racket-xp-mode)
+  (racket-xp-mode
    . (lambda ()
        (remove-hook 'pre-redisplay-functions
                     #'racket-xp-pre-redisplay
@@ -820,7 +816,7 @@
 (use-package hideshow
   :delight hs-minor-mode
   :hook
-  (prog-mode-hook . hs-minor-mode))
+  (prog-mode . hs-minor-mode))
 
 (use-package which-func
   :init
@@ -847,9 +843,9 @@
                        :formattingProvider "fourmolu")))))
 
   :hook
-  (eglot-managed-mode-hook . (lambda ()
-                               (setq-local eldoc-documentation-strategy
-                                           'eldoc-documentation-compose))))
+  (eglot-managed-mode . (lambda ()
+                          (setq-local eldoc-documentation-strategy
+                                      'eldoc-documentation-compose))))
 
 (use-package find-file
   :config
@@ -879,12 +875,12 @@
   (add-to-list 'safe-local-variable-values '(c-indent-style . "m5"))
 
   :hook
-  (c-mode-common-hook . (lambda ()
-                          (setq-local fill-column 80)
-                          (c-toggle-electric-state 1)
-                          (c-toggle-comment-style 1)))
-  (minizinc-mode-hook . (lambda ()
-                          (c-toggle-electric-state -1))))
+  (c-mode-common . (lambda ()
+                     (setq-local fill-column 80)
+                     (c-toggle-electric-state 1)
+                     (c-toggle-comment-style 1)))
+  (minizinc-mode . (lambda ()
+                     (c-toggle-electric-state -1))))
 
 (use-package minizinc-mode
   :ensure t
@@ -897,7 +893,7 @@
 
 (use-package verilog-mode
   :hook
-  (verilog-mode-hook
+  (verilog-mode
    . (lambda ()
        (setq-default compilation-error-regexp-alist
                      (mapcar 'cdr verilog-error-regexp-emacs-alist))))
@@ -939,12 +935,12 @@
                  (save-buffer)
                  (TeX-command-run-all nil))))
   :hook
-  (LaTeX-mode-hook . (lambda ()
-                       (turn-on-reftex)
-                       (LaTeX-math-mode)
-                       (prettify-symbols-mode)
-                       (TeX-fold-mode)
-                       (TeX-source-correlate-mode))))
+  (LaTeX-mode . (lambda ()
+                  (turn-on-reftex)
+                  (LaTeX-math-mode)
+                  (prettify-symbols-mode)
+                  (TeX-fold-mode)
+                  (TeX-source-correlate-mode))))
 
 (use-package vc
   :config
@@ -971,8 +967,8 @@
 (use-package csv-mode
   :ensure t
   :hook
-  (csv-mode-hook . csv-align-mode)
-  (csv-mode-hook . csv-guess-set-separator))
+  (csv-mode . csv-align-mode)
+  (csv-mode . csv-guess-set-separator))
 
 (use-package nix-mode
   :ensure t
@@ -990,7 +986,7 @@
 (use-package org-ai
   :ensure t
   :hook
-  (org-mode-hook . org-ai-mode)
+  (org-mode . org-ai-mode)
   :config
   (org-ai-install-yasnippets)
   (setq org-element-use-cache nil))
